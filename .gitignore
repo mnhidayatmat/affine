@@ -93,3 +93,16 @@ af.cmd
 
 # playwright
 storageState.json
+
+# Deployment - Environment variables with sensitive data
+deployment/.env
+
+# Deployment - Local configuration (contains credentials)
+deployment/.affine/
+
+# Deployment - Data directories
+deployment/data/
+deployment/storage/
+
+# Deployment - Docker volumes
+deployment/*.log

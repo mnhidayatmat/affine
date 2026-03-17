@@ -1,0 +1,32 @@
+name: affine
+services:
+  affine:
+    image: ghcr.io/toeverything/affine:${AFFINE_REVISION:-stable}
+    container_name: affine_server
+    ports:
+      - '${PORT:-3010}:3010'
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ${UPLOAD_LOCATION}:/root/.affine/storage
+      - ${CONFIG_LOCATION}:/root/.affine/config
+    env_file:
+      - .env
+    environment:
+      - REDIS_SERVER_HOST=127.0.0.1
+      - DATABASE_URL=postgresql://${DB_USERNAME}:${DB_PASSWORD}@127.0.0.1:${DB_PORT}/${DB_DATABASE}
+      - AFFINE_INDEXER_ENABLED=false
+    network_mode: host
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: affine_redis
+    command: redis-server --bind 127.0.0.1
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
