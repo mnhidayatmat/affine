@@ -1,0 +1,12 @@
+# Environment variables with sensitive data
+.env
+
+# Local configuration (contains credentials)
+.affine/
+
+# Data directories
+data/
+storage/
+
+# Docker volumes
+*.log

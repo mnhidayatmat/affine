@@ -1,0 +1,38 @@
+{
+  "storages": {
+    "avatar.publicPath": "https://your-bucket.region.cdn.digitaloceanspaces.com/avatars/",
+    "avatar.storage": {
+      "provider": "aws-s3",
+      "bucket": "your-bucket-name",
+      "config": {
+        "endpoint": "https://region.digitaloceanspaces.com",
+        "region": "region",
+        "forcePathStyle": true,
+        "credentials": {
+          "accessKeyId": "YOUR_ACCESS_KEY",
+          "secretAccessKey": "YOUR_SECRET_KEY"
+        }
+      }
+    },
+    "blob.storage": {
+      "provider": "aws-s3",
+      "bucket": "your-bucket-name",
+      "config": {
+        "endpoint": "https://region.digitaloceanspaces.com",
+        "region": "region",
+        "forcePathStyle": true,
+        "credentials": {
+          "accessKeyId": "YOUR_ACCESS_KEY",
+          "secretAccessKey": "YOUR_SECRET_KEY"
+        }
+      }
+    }
+  },
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "user": "aff_user",
+    "password": "your_password",
+    "database": "aff_database"
+  }
+}
