@@ -39,7 +39,9 @@ export class AvatarStorage {
   }
 
   async put(key: string, blob: BlobInputType, metadata?: PutObjectMetadata) {
-    await this.provider.put(key, blob, metadata);
+    // Store with wbl-storage/affine/avatars/ prefix
+    const storageKey = `wbl-storage/affine/avatars/${key}`;
+    await this.provider.put(storageKey, blob, metadata);
     let link = this.config.publicPath + key;
 
     if (link.startsWith('/')) {
@@ -50,11 +52,12 @@ export class AvatarStorage {
   }
 
   get(key: string) {
-    return this.provider.get(key);
+    return this.provider.get(`wbl-storage/affine/avatars/${key}`);
   }
 
   delete(link: string) {
-    return this.provider.delete(link.split('/').pop() as string);
+    const key = link.split('/').pop() as string;
+    return this.provider.delete(`wbl-storage/affine/avatars/${key}`);
   }
 
   @OnEvent('user.deleted')

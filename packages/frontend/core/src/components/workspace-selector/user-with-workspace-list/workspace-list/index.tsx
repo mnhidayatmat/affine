@@ -1,4 +1,4 @@
-import { IconButton, Menu, MenuItem } from '@affine/component';
+import { IconButton, Menu, MenuItem, notify } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { useSignOut } from '@affine/core/components/hooks/affine/use-sign-out';
@@ -29,20 +29,12 @@ import {
   useService,
   useServiceOptional,
 } from '@toeverything/infra';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
+import { WorkspaceDeleteModal } from '../../../../../desktop/dialogs/setting/workspace-setting/preference/delete-leave-workspace/delete';
 import { WorkspaceCard } from '../../workspace-card';
 import { AddServer } from '../add-server';
 import * as styles from './index.css';
-
-interface WorkspaceModalProps {
-  workspaces: WorkspaceMetadata[];
-  onClickWorkspace: (workspaceMetadata: WorkspaceMetadata) => void;
-  onClickWorkspaceSetting?: (workspaceMetadata: WorkspaceMetadata) => void;
-  onClickEnableCloud?: (meta: WorkspaceMetadata) => void;
-  onNewWorkspace: () => void;
-  onAddWorkspace: () => void;
-}
 
 const WorkspaceServerInfo = ({
   server,
@@ -125,11 +117,13 @@ const CloudWorkSpaceList = ({
   workspaces,
   onClickWorkspace,
   onClickEnableCloud,
+  onDeleteWorkspace,
 }: {
   server: Server;
   workspaces: WorkspaceMetadata[];
   onClickWorkspace: (workspaceMetadata: WorkspaceMetadata) => void;
   onClickEnableCloud?: (meta: WorkspaceMetadata) => void;
+  onDeleteWorkspace?: (meta: WorkspaceMetadata) => void;
 }) => {
   const t = useI18n();
   const globalContextService = useService(GlobalContextService);
@@ -194,6 +188,7 @@ const CloudWorkSpaceList = ({
         items={workspaces}
         onClick={onClickWorkspace}
         onEnableCloudClick={onClickEnableCloud}
+        onDeleteClick={onDeleteWorkspace}
       />
     </>
   );
@@ -204,7 +199,14 @@ const LocalWorkspaces = ({
   onClickWorkspace,
   onClickWorkspaceSetting,
   onClickEnableCloud,
-}: Omit<WorkspaceModalProps, 'onNewWorkspace' | 'onAddWorkspace'>) => {
+  onDeleteWorkspace,
+}: {
+  workspaces: WorkspaceMetadata[];
+  onClickWorkspace: (workspaceMetadata: WorkspaceMetadata) => void;
+  onClickWorkspaceSetting?: (workspaceMetadata: WorkspaceMetadata) => void;
+  onClickEnableCloud?: (meta: WorkspaceMetadata) => void;
+  onDeleteWorkspace?: (meta: WorkspaceMetadata) => void;
+}) => {
   const t = useI18n();
   if (workspaces.length === 0) {
     return null;
@@ -220,6 +222,7 @@ const LocalWorkspaces = ({
         onClick={onClickWorkspace}
         onSettingClick={onClickWorkspaceSetting}
         onEnableCloudClick={onClickEnableCloud}
+        onDeleteClick={onDeleteWorkspace}
       />
     </>
   );
@@ -235,7 +238,13 @@ export const AFFiNEWorkspaceList = ({
   showEnableCloudButton?: boolean;
 }) => {
   const workspacesService = useService(WorkspacesService);
+  const globalContextService = useService(GlobalContextService);
   const workspaces = useLiveData(workspacesService.list.workspaces$);
+  const navigateHelper = useNavigateHelper();
+  const t = useI18n();
+
+  const [deletingWorkspace, setDeletingWorkspace] =
+    useState<WorkspaceMetadata | null>(null);
 
   const confirmEnableCloud = useEnableCloud();
 
@@ -286,6 +295,41 @@ export const AFFiNEWorkspaceList = ({
     [onClickWorkspace, onEventEnd]
   );
 
+  const handleDeleteWorkspace = useCallback(
+    async (metadata: WorkspaceMetadata) => {
+      setDeletingWorkspace(metadata);
+    },
+    []
+  );
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deletingWorkspace) return;
+
+    const currentWorkspaceId = globalContextService.globalContext.workspaceId.$.value;
+    const workspaceList = workspaces;
+
+    // Navigate away if deleting current workspace
+    if (currentWorkspaceId === deletingWorkspace.id) {
+      const backWorkspace = workspaceList.find(
+        ws => ws.id !== currentWorkspaceId
+      );
+      if (backWorkspace) {
+        navigateHelper.jumpToPage(backWorkspace.id, 'all');
+      } else {
+        navigateHelper.jumpToIndex();
+      }
+    }
+
+    try {
+      await workspacesService.deleteWorkspace(deletingWorkspace);
+      notify.success({ title: t['Successfully deleted']() });
+    } catch {
+      notify.error({ title: t['Failed to delete workspace']() });
+    } finally {
+      setDeletingWorkspace(null);
+    }
+  }, [deletingWorkspace, globalContextService, navigateHelper, t, workspaces, workspacesService]);
+
   return (
     <>
       {/* 1. affine-cloud */}
@@ -299,6 +343,7 @@ export const AFFiNEWorkspaceList = ({
             ({ flavour }) => flavour === affineCloudServer.id
           )}
           onClickWorkspace={handleClickWorkspace}
+          onDeleteWorkspace={handleDeleteWorkspace}
         />
       </FrameworkScope>
       {(localWorkspaces.length > 0 || selfhostServers.length > 0) && (
@@ -312,6 +357,7 @@ export const AFFiNEWorkspaceList = ({
         onClickEnableCloud={
           showEnableCloudButton ? onClickEnableCloud : undefined
         }
+        onDeleteWorkspace={handleDeleteWorkspace}
       />
       {selfhostServers.length > 0 && (
         <Divider size="thinner" className={styles.serverDivider} />
@@ -326,6 +372,7 @@ export const AFFiNEWorkspaceList = ({
               ({ flavour }) => flavour === server.id
             )}
             onClickWorkspace={handleClickWorkspace}
+            onDeleteWorkspace={handleDeleteWorkspace}
           />
           {index !== selfhostServers.length - 1 && (
             <Divider size="thinner" className={styles.serverDivider} />
@@ -334,6 +381,18 @@ export const AFFiNEWorkspaceList = ({
       ))}
       <AddServer />
       <Divider size="thinner" />
+
+      {/* Delete Confirmation Modal */}
+      {deletingWorkspace && (
+        <WorkspaceDeleteModal
+          workspaceMetadata={deletingWorkspace}
+          open={!!deletingWorkspace}
+          onOpenChange={open => {
+            if (!open) setDeletingWorkspace(null);
+          }}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
     </>
   );
 };
@@ -343,6 +402,7 @@ interface WorkspaceListProps {
   onClick: (workspace: WorkspaceMetadata) => void;
   onSettingClick?: (workspace: WorkspaceMetadata) => void;
   onEnableCloudClick?: (meta: WorkspaceMetadata) => void;
+  onDeleteClick?: (meta: WorkspaceMetadata) => void;
 }
 
 interface SortableWorkspaceItemProps extends Omit<WorkspaceListProps, 'items'> {
@@ -354,6 +414,7 @@ const SortableWorkspaceItem = ({
   onClick,
   onSettingClick,
   onEnableCloudClick,
+  onDeleteClick,
 }: SortableWorkspaceItemProps) => {
   const handleClick = useCallback(() => {
     onClick(workspaceMetadata);
@@ -371,14 +432,16 @@ const SortableWorkspaceItem = ({
       active={currentWorkspace?.id === workspaceMetadata.id}
       onClickOpenSettings={onSettingClick}
       onClickEnableCloud={onEnableCloudClick}
+      onClickDelete={onDeleteClick}
     />
   );
 };
 
 export const WorkspaceList = (props: WorkspaceListProps) => {
   const workspaceList = props.items;
+  const { items, ...restProps } = props;
 
   return workspaceList.map(item => (
-    <SortableWorkspaceItem key={item.id} {...props} workspaceMetadata={item} />
+    <SortableWorkspaceItem key={item.id} {...restProps} workspaceMetadata={item} />
   ));
 };

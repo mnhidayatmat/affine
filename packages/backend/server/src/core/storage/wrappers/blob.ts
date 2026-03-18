@@ -72,7 +72,7 @@ export class WorkspaceBlobStorage {
   async put(workspaceId: string, key: string, blob: Buffer) {
     const meta: PutObjectMetadata = autoMetadata(blob);
 
-    await this.provider.put(`${workspaceId}/${key}`, blob, meta);
+    await this.provider.put(`wbl-storage/affine/${workspaceId}/${key}`, blob, meta);
     await this.upsert(workspaceId, key, {
       contentType: meta.contentType ?? 'application/octet-stream',
       contentLength: blob.length,
@@ -81,7 +81,7 @@ export class WorkspaceBlobStorage {
   }
 
   async get(workspaceId: string, key: string, signedUrl?: boolean) {
-    return this.provider.get(`${workspaceId}/${key}`, signedUrl);
+    return this.provider.get(`wbl-storage/affine/${workspaceId}/${key}`, signedUrl);
   }
 
   async presignPut(
@@ -89,7 +89,7 @@ export class WorkspaceBlobStorage {
     key: string,
     metadata?: PutObjectMetadata
   ) {
-    return this.provider.presignPut?.(`${workspaceId}/${key}`, metadata);
+    return this.provider.presignPut?.(`wbl-storage/affine/${workspaceId}/${key}`, metadata);
   }
 
   async createMultipartUpload(
@@ -98,7 +98,7 @@ export class WorkspaceBlobStorage {
     metadata?: PutObjectMetadata
   ) {
     return this.provider.createMultipartUpload?.(
-      `${workspaceId}/${key}`,
+      `wbl-storage/affine/${workspaceId}/${key}`,
       metadata
     );
   }
@@ -110,7 +110,7 @@ export class WorkspaceBlobStorage {
     partNumber: number
   ) {
     return this.provider.presignUploadPart?.(
-      `${workspaceId}/${key}`,
+      `wbl-storage/affine/${workspaceId}/${key}`,
       uploadId,
       partNumber
     );
@@ -122,7 +122,7 @@ export class WorkspaceBlobStorage {
     uploadId: string
   ) {
     return this.provider.listMultipartUploadParts?.(
-      `${workspaceId}/${key}`,
+      `wbl-storage/affine/${workspaceId}/${key}`,
       uploadId
     );
   }
@@ -138,7 +138,7 @@ export class WorkspaceBlobStorage {
     }
 
     await this.provider.completeMultipartUpload(
-      `${workspaceId}/${key}`,
+      `wbl-storage/affine/${workspaceId}/${key}`,
       uploadId,
       parts
     );
@@ -154,12 +154,12 @@ export class WorkspaceBlobStorage {
       return false;
     }
 
-    await this.provider.abortMultipartUpload(`${workspaceId}/${key}`, uploadId);
+    await this.provider.abortMultipartUpload(`wbl-storage/affine/${workspaceId}/${key}`, uploadId);
     return true;
   }
 
   async head(workspaceId: string, key: string) {
-    return this.provider.head(`${workspaceId}/${key}`);
+    return this.provider.head(`wbl-storage/affine/${workspaceId}/${key}`);
   }
 
   async complete(
@@ -180,7 +180,7 @@ export class WorkspaceBlobStorage {
       return { ok: false, reason: 'mime_mismatch' };
     }
 
-    const object = await this.provider.get(`${workspaceId}/${key}`);
+    const object = await this.provider.get(`wbl-storage/affine/${workspaceId}/${key}`);
     if (!object.body) {
       return { ok: false, reason: 'not_found' };
     }
@@ -233,9 +233,11 @@ export class WorkspaceBlobStorage {
       return blobsInDb;
     }
 
-    const blobs = await this.provider.list(workspaceId + '/');
+    const blobs = await this.provider.list(`wbl-storage/affine/${workspaceId}/`);
     blobs.forEach(blob => {
-      blob.key = blob.key.slice(workspaceId.length + 1);
+      // Remove the 'wbl-storage/affine/{workspaceId}/' prefix
+      const prefix = `wbl-storage/affine/${workspaceId}/`;
+      blob.key = blob.key.slice(prefix.length);
     });
 
     if (syncBlobMeta) {
@@ -252,7 +254,7 @@ export class WorkspaceBlobStorage {
 
   async delete(workspaceId: string, key: string, permanently = false) {
     if (permanently) {
-      await this.provider.delete(`${workspaceId}/${key}`);
+      await this.provider.delete(`wbl-storage/affine/${workspaceId}/${key}`);
     }
     await this.models.blob.delete(workspaceId, key, permanently);
   }
@@ -310,7 +312,7 @@ export class WorkspaceBlobStorage {
   @OnEvent('workspace.blob.sync')
   async syncBlobMeta({ workspaceId, key }: Events['workspace.blob.sync']) {
     try {
-      const meta = await this.provider.head(`${workspaceId}/${key}`);
+      const meta = await this.provider.head(`wbl-storage/affine/${workspaceId}/${key}`);
 
       if (meta) {
         await this.upsert(workspaceId, key, meta);

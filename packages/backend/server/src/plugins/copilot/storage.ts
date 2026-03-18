@@ -50,13 +50,13 @@ export class CopilotStorage {
     key: string,
     blob: BlobInputType
   ) {
-    const name = `${userId}/${workspaceId}/${key}`;
+    const name = `wbl-storage/affine/copilot/${userId}/${workspaceId}/${key}`;
     await this.provider.put(name, blob);
     if (!env.prod) {
       // return image base64url for dev environment
       return `data:image/png;base64,${blob.toString('base64')}`;
     }
-    return this.url.link(`/api/copilot/blob/${name}`);
+    return this.url.link(`/api/copilot/blob/${userId}/${workspaceId}/${key}`);
   }
 
   @CallMetric('ai', 'blob_get')
@@ -66,12 +66,12 @@ export class CopilotStorage {
     key: string,
     signedUrl?: boolean
   ) {
-    return this.provider.get(`${userId}/${workspaceId}/${key}`, signedUrl);
+    return this.provider.get(`wbl-storage/affine/copilot/${userId}/${workspaceId}/${key}`, signedUrl);
   }
 
   @CallMetric('ai', 'blob_delete')
   async delete(userId: string, workspaceId: string, key: string) {
-    await this.provider.delete(`${userId}/${workspaceId}/${key}`);
+    await this.provider.delete(`wbl-storage/affine/copilot/${userId}/${workspaceId}/${key}`);
   }
 
   @CallMetric('ai', 'blob_upload')

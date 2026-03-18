@@ -1,4 +1,5 @@
 import { Button, notify, Skeleton, Tooltip } from '@affine/component';
+import { Menu, MenuItem } from '@affine/component/ui/menu';
 import { Loading } from '@affine/component/ui/loading';
 import { useSystemOnline } from '@affine/core/components/hooks/use-system-online';
 import { useWorkspace } from '@affine/core/components/hooks/use-workspace';
@@ -14,9 +15,11 @@ import {
   ArrowDownSmallIcon,
   CloudWorkspaceIcon,
   CollaborationIcon,
+  DeleteIcon,
   DoneIcon,
   InformationFillDuotoneIcon,
   LocalWorkspaceIcon,
+  MoreHorizontalIcon,
   NoNetworkIcon,
   SettingsIcon,
   TeamWorkspaceIcon,
@@ -264,6 +267,7 @@ export const WorkspaceCard = forwardRef<
     dense?: boolean;
     onClickOpenSettings?: (workspaceMetadata: WorkspaceMetadata) => void;
     onClickEnableCloud?: (workspaceMetadata: WorkspaceMetadata) => void;
+    onClickDelete?: (workspaceMetadata: WorkspaceMetadata) => void;
   }
 >(
   (
@@ -273,6 +277,7 @@ export const WorkspaceCard = forwardRef<
       showArrowDownIcon,
       onClickOpenSettings,
       onClickEnableCloud,
+      onClickDelete,
       className,
       infoClassName,
       disable,
@@ -291,6 +296,7 @@ export const WorkspaceCard = forwardRef<
     const navigate = useNavigateHelper();
 
     const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
+    const [showDeleteMenu, setShowDeleteMenu] = useState(false);
 
     const onEnableCloud = useCatchEventCallback(() => {
       onClickEnableCloud?.(workspaceMetadata);
@@ -367,7 +373,33 @@ export const WorkspaceCard = forwardRef<
               </Button>
             ) : null}
 
-            {onClickOpenSettings && (
+            {onClickDelete && (
+              <Menu
+                items={
+                  <MenuItem
+                    prefixIcon={<DeleteIcon />}
+                    type="danger"
+                    onClick={() => onClickDelete(workspaceMetadata)}
+                  >
+                    {t['Delete']()}
+                  </MenuItem>
+              }
+                onOpenChange={setShowDeleteMenu}
+                open={showDeleteMenu}
+              >
+                <div
+                  className={styles.settingButton}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setShowDeleteMenu(!showDeleteMenu);
+                  }}
+                >
+                  <MoreHorizontalIcon width={16} height={16} />
+                </div>
+              </Menu>
+            )}
+
+            {onClickOpenSettings && !onClickDelete && (
               <div className={styles.settingButton} onClick={onOpenSettings}>
                 <SettingsIcon width={16} height={16} />
               </div>

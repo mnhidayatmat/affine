@@ -151,6 +151,7 @@ export const WorkspaceNavigator = ({
   ...props
 }: WorkspaceSelectorProps) => {
   const { jumpToPage } = useNavigateHelper();
+  const { workspacesService } = useServices({ WorkspacesService });
   const workbench = useServiceOptional(WorkbenchService)?.workbench;
 
   const handleClickWorkspace = useCallback(
@@ -180,28 +181,51 @@ export const WorkspaceNavigator = ({
     [jumpToPage, onSelectWorkspace, workbench]
   );
   const handleCreatedWorkspace = useCallback(
-    (payload: { metadata: WorkspaceMetadata; defaultDocId?: string }) => {
+    async (payload: { metadata: WorkspaceMetadata; defaultDocId?: string }) => {
       onCreatedWorkspace?.(payload);
-      if (document.startViewTransition) {
-        document.startViewTransition(() => {
-          if (payload.defaultDocId) {
-            jumpToPage(payload.metadata.id, payload.defaultDocId);
-          } else {
-            jumpToPage(payload.metadata.id, 'all');
-          }
-          return new Promise(resolve =>
-            setTimeout(resolve, 150)
-          ); /* start transition after 150ms */
-        });
-      } else {
+
+      // Wait for the workspace to be available in the list before navigating
+      // This prevents the "Transition was skipped" error caused by race conditions
+      const waitForWorkspace = workspacesService.list.workspaces$.waitFor(
+        workspaces => workspaces.some(w => w.id === payload.metadata.id)
+      );
+
+      // Add a timeout to prevent infinite waiting
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Workspace not found in list')), 5000)
+      );
+
+      try {
+        await Promise.race([waitForWorkspace, timeoutPromise]);
+      } catch {
+        // If timeout or error, proceed anyway - the workspace might still load
+      }
+
+      const performNavigation = () => {
         if (payload.defaultDocId) {
           jumpToPage(payload.metadata.id, payload.defaultDocId);
         } else {
           jumpToPage(payload.metadata.id, 'all');
         }
+      };
+
+      if (document.startViewTransition) {
+        try {
+          await document.startViewTransition(() => {
+            performNavigation();
+            return new Promise(resolve =>
+              setTimeout(resolve, 150)
+            ); /* start transition after 150ms */
+          }).finished;
+        } catch {
+          // If view transition fails (e.g., skipped), navigate without it
+          performNavigation();
+        }
+      } else {
+        performNavigation();
       }
     },
-    [jumpToPage, onCreatedWorkspace]
+    [jumpToPage, onCreatedWorkspace, workspacesService]
   );
   return (
     <WorkspaceSelector
