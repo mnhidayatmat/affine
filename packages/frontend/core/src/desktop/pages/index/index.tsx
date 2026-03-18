@@ -70,6 +70,7 @@ export const Component = ({
   const [searchParams] = useSearchParams();
 
   const createOnceRef = useRef(false);
+  const navigatedRef = useRef(false);
 
   const createCloudWorkspace = useCallback(() => {
     if (createOnceRef.current) return;
@@ -95,8 +96,14 @@ export const Component = ({
       return;
     }
 
+    // Prevent navigation loop - only navigate once
+    if (navigatedRef.current) {
+      return;
+    }
+
     if (!enableLocalWorkspace && !loggedIn) {
       localStorage.removeItem('last_workspace_id');
+      navigatedRef.current = true;
       jumpToSignIn();
       return;
     }
@@ -105,6 +112,7 @@ export const Component = ({
     if (searchParams.get('initCloud') === 'true') {
       if (loggedIn) {
         if (list.every(w => w.flavour !== 'affine-cloud')) {
+          navigatedRef.current = true;
           createCloudWorkspace();
           return;
         }
@@ -112,6 +120,7 @@ export const Component = ({
         // open first cloud workspace
         const openWorkspace =
           list.find(w => w.flavour === 'affine-cloud') ?? list[0];
+        navigatedRef.current = true;
         openPage(openWorkspace.id, defaultIndexRoute);
       } else {
         return;
@@ -125,6 +134,7 @@ export const Component = ({
       const lastId = localStorage.getItem('last_workspace_id');
 
       const openWorkspace = list.find(w => w.id === lastId) ?? list[0];
+      navigatedRef.current = true;
       openPage(openWorkspace.id, defaultIndexRoute, RouteLogic.REPLACE);
     }
   }, [
@@ -147,13 +157,20 @@ export const Component = ({
   }, [desktopApi]);
 
   useEffect(() => {
-    if (listIsLoading || list.length > 0 || !enableLocalWorkspace) {
+    // Skip if already handled navigation or if conditions don't match
+    if (
+      navigatedRef.current ||
+      listIsLoading ||
+      list.length > 0 ||
+      !enableLocalWorkspace
+    ) {
       return;
     }
 
     createFirstAppData(workspacesService)
       .then(createdWorkspace => {
         if (createdWorkspace) {
+          navigatedRef.current = true;
           if (createdWorkspace.defaultPageId) {
             jumpToPage(
               createdWorkspace.meta.id,

@@ -31,7 +31,7 @@ import {
 } from '@toeverything/infra';
 import { useCallback, useMemo, useState } from 'react';
 
-import { WorkspaceDeleteModal } from '../../../../../desktop/dialogs/setting/workspace-setting/preference/delete-leave-workspace/delete';
+import { WorkspaceDeleteModal } from '../../../../desktop/dialogs/setting/workspace-setting/preference/delete-leave-workspace/delete';
 import { WorkspaceCard } from '../../workspace-card';
 import { AddServer } from '../add-server';
 import * as styles from './index.css';
@@ -297,13 +297,18 @@ export const AFFiNEWorkspaceList = ({
 
   const handleDeleteWorkspace = useCallback(
     async (metadata: WorkspaceMetadata) => {
+      console.log('[DELETE] handleDeleteWorkspace called', metadata);
       setDeletingWorkspace(metadata);
     },
     []
   );
 
   const handleConfirmDelete = useCallback(async () => {
-    if (!deletingWorkspace) return;
+    console.log('[DELETE] handleConfirmDelete called', deletingWorkspace);
+    if (!deletingWorkspace) {
+      console.log('[DELETE] No workspace to delete, returning');
+      return;
+    }
 
     const currentWorkspaceId = globalContextService.globalContext.workspaceId.$.value;
     const workspaceList = workspaces;
@@ -321,11 +326,15 @@ export const AFFiNEWorkspaceList = ({
     }
 
     try {
+      console.log('[DELETE] Calling workspacesService.deleteWorkspace', deletingWorkspace);
       await workspacesService.deleteWorkspace(deletingWorkspace);
+      console.log('[DELETE] Delete successful');
       notify.success({ title: t['Successfully deleted']() });
-    } catch {
+    } catch (err) {
+      console.error('[DELETE] Delete failed', err);
       notify.error({ title: t['Failed to delete workspace']() });
     } finally {
+      console.log('[DELETE] Setting deletingWorkspace to null');
       setDeletingWorkspace(null);
     }
   }, [deletingWorkspace, globalContextService, navigateHelper, t, workspaces, workspacesService]);

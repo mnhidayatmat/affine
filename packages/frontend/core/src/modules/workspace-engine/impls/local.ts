@@ -224,12 +224,36 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   async deleteWorkspace(id: string): Promise<void> {
     setLocalWorkspaceIds(ids => ids.filter(x => x !== id));
 
-    // TODO(@forehalo): deleting logic for indexeddb workspaces
     if (BUILD_CONFIG.isElectron) {
       const electronApi = this.framework.get(DesktopApiService);
       await electronApi.handler.workspace.moveToTrash(
         universalId({ peer: 'local', type: 'workspace', id })
       );
+    } else {
+      // Delete IndexedDB databases for web workspaces
+      try {
+        const databases = await indexedDB.databases();
+        const dbsToDelete = databases.filter(db => db.name?.includes(id));
+
+        for (const db of dbsToDelete) {
+          if (db.name) {
+            indexedDB.deleteDatabase(db.name);
+          }
+        }
+
+        // Also try to clear storage using the storage API
+        if (navigator.storage && navigator.storage.getDirectory) {
+          try {
+            const root = await navigator.storage.getDirectory();
+            // Remove workspace directory
+            await root.removeRecursively({ name: id });
+          } catch {
+            // Ignore if directory doesn't exist
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to delete IndexedDB workspace data', err);
+      }
     }
     // notify all browser tabs, so they can update their workspace list
     this.notifyChannel.postMessage(id);
