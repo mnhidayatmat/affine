@@ -1,0 +1,106 @@
+name: Deploy Self-Host
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/mnhidayatmat/affine
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          registry-url: https://npm.pkg.github.com
+          scope: '@toeverything'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn --immutable --inline-builds
+        env:
+          HUSKY: '0'
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+          SENTRYCLI_SKIP_DOWNLOAD: '1'
+
+      - name: Build Web Frontend
+        run: yarn affine @affine/web build
+        env:
+          BUILD_TYPE: selfhosted
+
+      - name: Build Admin Frontend
+        run: yarn affine @affine/admin build
+        env:
+          BUILD_TYPE: selfhosted
+
+      - name: Build Mobile Frontend
+        run: yarn affine @affine/mobile build
+        env:
+          BUILD_TYPE: selfhosted
+
+      - name: Build Server
+        run: yarn workspace @affine/server build
+
+      - name: Install production dependencies
+        run: |
+          yarn config set --json supportedArchitectures.cpu '["x64"]'
+          yarn config set --json supportedArchitectures.libc '["glibc"]'
+          yarn workspaces focus @affine/server --production
+
+      - name: Generate Prisma client
+        run: yarn workspace @affine/server prisma generate
+
+      - name: Move node_modules into server package
+        run: mv ./node_modules ./packages/backend/server/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          file: .github/deployment/node/Dockerfile
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: IMAGE_NAME,GHCR_TOKEN
+          script: |
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u mnhidayatmat --password-stdin
+            cd /var/www/docker/workspace_coursesme_com
+            docker pull "$IMAGE_NAME:latest"
+            docker compose up -d --force-recreate affine affine_migration
+            docker image prune -f
