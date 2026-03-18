@@ -245,8 +245,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         if (navigator.storage && navigator.storage.getDirectory) {
           try {
             const root = await navigator.storage.getDirectory();
-            // Remove workspace directory
-            await root.removeRecursively({ name: id });
+            await root.removeEntry(id, { recursive: true });
           } catch {
             // Ignore if directory doesn't exist
           }

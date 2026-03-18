@@ -296,26 +296,22 @@ export const AFFiNEWorkspaceList = ({
   );
 
   const handleDeleteWorkspace = useCallback(
-    async (metadata: WorkspaceMetadata) => {
-      console.log('[DELETE] handleDeleteWorkspace called', metadata);
+    (metadata: WorkspaceMetadata) => {
       setDeletingWorkspace(metadata);
     },
     []
   );
 
   const handleConfirmDelete = useCallback(async () => {
-    console.log('[DELETE] handleConfirmDelete called', deletingWorkspace);
     if (!deletingWorkspace) {
-      console.log('[DELETE] No workspace to delete, returning');
       return;
     }
 
     const currentWorkspaceId = globalContextService.globalContext.workspaceId.$.value;
-    const workspaceList = workspaces;
 
     // Navigate away if deleting current workspace
     if (currentWorkspaceId === deletingWorkspace.id) {
-      const backWorkspace = workspaceList.find(
+      const backWorkspace = workspaces.find(
         ws => ws.id !== currentWorkspaceId
       );
       if (backWorkspace) {
@@ -326,15 +322,12 @@ export const AFFiNEWorkspaceList = ({
     }
 
     try {
-      console.log('[DELETE] Calling workspacesService.deleteWorkspace', deletingWorkspace);
       await workspacesService.deleteWorkspace(deletingWorkspace);
-      console.log('[DELETE] Delete successful');
       notify.success({ title: t['Successfully deleted']() });
     } catch (err) {
-      console.error('[DELETE] Delete failed', err);
+      console.error('Failed to delete workspace', err);
       notify.error({ title: t['Failed to delete workspace']() });
     } finally {
-      console.log('[DELETE] Setting deletingWorkspace to null');
       setDeletingWorkspace(null);
     }
   }, [deletingWorkspace, globalContextService, navigateHelper, t, workspaces, workspacesService]);
