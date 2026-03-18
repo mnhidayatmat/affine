@@ -325,4 +325,221 @@ export class CopilotContextService implements OnApplicationBootstrap {
       status: ContextEmbedStatus.failed,
     }));
   }
+
+  /**
+   * Enhanced context retrieval with reference awareness
+   * Includes linked blocks and cross-document references
+   */
+  async matchWithReferences(
+    workspaceId: string,
+    content: string,
+    options: {
+      topK?: number;
+      includeReferences?: boolean;
+      maxDepth?: number;
+      signal?: AbortSignal;
+      threshold?: number;
+    } = {}
+  ) {
+    const {
+      topK = 5,
+      includeReferences = true,
+      maxDepth = 2,
+      signal,
+      threshold = 0.7,
+    } = options;
+
+    if (!this.embeddingClient) return [];
+
+    // First, get direct matches
+    const directMatches = await this.matchWorkspaceAll(
+      workspaceId,
+      content,
+      topK * 2,
+      signal,
+      threshold
+    );
+
+    if (!includeReferences || !directMatches.length) {
+      return await this.embeddingClient.reRank(
+        content,
+        directMatches,
+        topK,
+        signal
+      );
+    }
+
+    // Extract document IDs from matches to find linked references
+    const docIds = new Set<string>();
+    const enrichedMatches = await Promise.all(
+      directMatches.map(async match => {
+        if (match.docId) {
+          docIds.add(match.docId);
+        }
+
+        // Try to extract linked document references from the content
+        const linkedDocIds = await this.extractLinkedDocIds(
+          match.content || match.chunk || ''
+        );
+
+        return {
+          ...match,
+          linkedDocIds,
+        };
+      })
+    );
+
+    // If we have linked documents, fetch their embeddings too
+    const referenceMatches: typeof directMatches = [];
+    const processedDocs = new Set(docIds);
+
+    for (const match of enrichedMatches) {
+      for (const linkedDocId of match.linkedDocIds) {
+        if (processedDocs.has(linkedDocId) || processedDocs.size >= topK * 3) {
+          continue;
+        }
+        processedDocs.add(linkedDocId);
+
+        // Get embeddings for linked documents
+        try {
+          const linkedEmbeddings =
+            await this.models.copilotContext.matchWorkspaceEmbedding(
+              await this.embeddingClient.getEmbedding(content, signal),
+              workspaceId,
+              2,
+              threshold,
+              [linkedDocId]
+            );
+
+          for (const emb of linkedEmbeddings) {
+            referenceMatches.push({
+              ...emb,
+              referenceSource: match.docId,
+              referenceType: 'linked',
+            } as any);
+          }
+        } catch (e) {
+          // Skip failed reference lookups
+          this.logger.debug(`Failed to fetch reference for ${linkedDocId}`, e);
+        }
+      }
+    }
+
+    // Combine and re-rank all results
+    const allResults = [
+      ...enrichedMatches.map(m => ({ ...m, referenceType: 'direct' })),
+      ...referenceMatches,
+    ];
+
+    return await this.embeddingClient.reRank(content, allResults, topK, signal);
+  }
+
+  /**
+   * Extract linked document IDs from text content
+   * Looks for AFFiNE document reference patterns
+   */
+  private async extractLinkedDocIds(content: string): Promise<string[]> {
+    const linkedDocIds: string[] = [];
+
+    // Match AFFiNE internal link patterns: [[docId]] or [[docId|Title]]
+    const internalLinkPattern = /\[\[([a-zA-Z0-9_-]+)(?:\|[^\]]*)?\]\]/g;
+    let match;
+
+    while ((match = internalLinkPattern.exec(content)) !== null) {
+      const docId = match[1];
+      if (docId && !docId.startsWith('$')) {
+        linkedDocIds.push(docId);
+      }
+    }
+
+    // Match markdown link patterns: [text](docId)
+    const markdownLinkPattern = /\[([^\]]+)\]\(([a-zA-Z0-9_-]+)\)/g;
+    while ((match = markdownLinkPattern.exec(content)) !== null) {
+      const docId = match[2];
+      if (docId && !docId.startsWith('http') && !docId.startsWith('$')) {
+        linkedDocIds.push(docId);
+      }
+    }
+
+    // Match @mention patterns that reference documents
+    const mentionPattern = /@([a-zA-Z0-9_-]+)/g;
+    while ((match = mentionPattern.exec(content)) !== null) {
+      const docId = match[1];
+      if (docId && docId.length >= 8) {
+        linkedDocIds.push(docId);
+      }
+    }
+
+    return [...new Set(linkedDocIds)];
+  }
+
+  /**
+   * Get context for a specific document including its references
+   */
+  async getDocWithContext(
+    workspaceId: string,
+    docId: string,
+    options: {
+      includeReferences?: boolean;
+      maxReferences?: number;
+      signal?: AbortSignal;
+    } = {}
+  ) {
+    const { includeReferences = true, maxReferences = 3, signal } = options;
+
+    // Get the main document content
+    const docContent = await this.models.doc.getDocMarkdown(
+      workspaceId,
+      docId,
+      false
+    );
+
+    if (!docContent) {
+      return null;
+    }
+
+    const result = {
+      docId,
+      title: docContent.title || 'Untitled',
+      content: docContent.markdown || '',
+      references: [] as Array<{
+        docId: string;
+        title: string;
+        content: string;
+      }>,
+    };
+
+    if (!includeReferences) {
+      return result;
+    }
+
+    // Extract linked document IDs
+    const linkedDocIds = await this.extractLinkedDocIds(
+      result.content + ' ' + result.title
+    );
+
+    // Fetch reference documents
+    for (const linkedDocId of linkedDocIds.slice(0, maxReferences)) {
+      try {
+        const refDoc = await this.models.doc.getDocMarkdown(
+          workspaceId,
+          linkedDocId,
+          false
+        );
+
+        if (refDoc) {
+          result.references.push({
+            docId: linkedDocId,
+            title: refDoc.title || 'Untitled',
+            content: (refDoc.markdown || '').substring(0, 500), // Limit reference content
+          });
+        }
+      } catch (e) {
+        // Skip failed reference lookups
+        this.logger.debug(`Failed to fetch reference doc ${linkedDocId}`, e);
+      }
+    }
+
+    return result;
+  }
 }

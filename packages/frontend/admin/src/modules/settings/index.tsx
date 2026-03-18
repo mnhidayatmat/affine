@@ -142,6 +142,8 @@ const AdminPanel = ({
         >
           {ALL_SETTING_GROUPS.map(group => {
             const { name, module, fields, operations } = group;
+            const customRenderer = 'customRenderer' in group ? group.customRenderer : undefined;
+            const CustomRenderer = customRenderer;
             const dirty = isGroupDirty(module);
             const saving = isGroupSaving(module);
             const sourceConfig = patchedAppConfig[module] ?? appConfig[module];
@@ -172,51 +174,65 @@ const AdminPanel = ({
                     className="flex flex-col gap-8"
                     key={`${module}-${version}`}
                   >
-                    {fields.map(field => {
-                      let props: ConfigInputProps;
-                      if (typeof field === 'string') {
-                        const descriptor =
-                          ALL_CONFIG_DESCRIPTORS[module][field];
-                        props = {
-                          field: `${module}/${field}`,
-                          desc: descriptor.desc,
-                          type: descriptor.type,
-                          options: [],
-                          defaultValue: get(sourceConfig, field),
-                          onChange: onUpdate,
-                        };
-                      } else {
-                        const descriptor =
-                          ALL_CONFIG_DESCRIPTORS[module][field.key];
-                        props = {
-                          field: `${module}/${field.key}${field.sub ? `/${field.sub}` : ''}`,
-                          desc: field.desc ?? descriptor.desc,
-                          type: field.type ?? descriptor.type,
-                          // @ts-expect-error for enum type
-                          options: field.options,
-                          defaultValue: get(
-                            sourceConfig,
-                            field.key + (field.sub ? '.' + field.sub : '')
-                          ),
-                          onChange: onUpdate,
-                        };
-                      }
-
-                      return (
-                        <ConfigRow
-                          key={props.field}
-                          {...props}
-                          onErrorChange={onFieldErrorChange}
-                        />
-                      );
-                    })}
-
-                    {operations?.map(Operation => (
-                      <Operation
-                        key={Operation.name}
-                        appConfig={patchedAppConfig}
+                    {CustomRenderer ? (
+                      <CustomRenderer
+                        appConfig={appConfig}
+                        patchedAppConfig={patchedAppConfig}
+                        onUpdate={onUpdate}
                       />
-                    ))}
+                    ) : (
+                      <>
+                        {fields.map(field => {
+                      />
+                    ) : (
+                      <>
+                        {fields.map(field => {
+                          let props: ConfigInputProps;
+                          if (typeof field === 'string') {
+                            const descriptor =
+                              ALL_CONFIG_DESCRIPTORS[module][field];
+                            props = {
+                              field: `${module}/${field}`,
+                              desc: descriptor.desc,
+                              type: descriptor.type,
+                              options: [],
+                              defaultValue: get(sourceConfig, field),
+                              onChange: onUpdate,
+                            };
+                          } else {
+                            const descriptor =
+                              ALL_CONFIG_DESCRIPTORS[module][field.key];
+                            props = {
+                              field: `${module}/${field.key}${field.sub ? `/${field.sub}` : ''}`,
+                              desc: field.desc ?? descriptor.desc,
+                              type: field.type ?? descriptor.type,
+                              // @ts-expect-error for enum type
+                              options: field.options,
+                              defaultValue: get(
+                                sourceConfig,
+                                field.key + (field.sub ? '.' + field.sub : '')
+                              ),
+                              onChange: onUpdate,
+                            };
+                          }
+
+                          return (
+                            <ConfigRow
+                              key={props.field}
+                              {...props}
+                              onErrorChange={onFieldErrorChange}
+                            />
+                          );
+                        })}
+
+                        {operations?.map(Operation => (
+                          <Operation
+                            key={Operation.name}
+                            appConfig={patchedAppConfig}
+                          />
+                        ))}
+                      </>
+                    )}
 
                     <div className="flex justify-end gap-2">
                       {dirty ? (

@@ -578,6 +578,82 @@ Could you make a new website based on these notes and send back just the html fi
       content: options.input,
     });
   });
+
+  // New: Repurpose to social media
+  AIProvider.provide('repurposeToSocial', async options => {
+    const sessionId = await createSession({
+      promptName: 'Repurpose to social media',
+      ...options,
+    });
+    return textToText({
+      ...options,
+      client,
+      sessionId,
+      content: options.input,
+      params: {
+        platform: options.platform || 'Twitter',
+      },
+    });
+  });
+
+  // New: Change writing style
+  AIProvider.provide('changeStyle', async options => {
+    const sessionId = await createSession({
+      promptName: 'Change writing style',
+      ...options,
+    });
+    return textToText({
+      ...options,
+      client,
+      sessionId,
+      content: options.input,
+      params: {
+        style: options.style || 'Professional',
+      },
+    });
+  });
+
+  // New: Brainstorm pros and cons
+  AIProvider.provide('brainstormProsCons', async options => {
+    const sessionId = await createSession({
+      promptName: 'Brainstorm pros and cons',
+      ...options,
+    });
+    return textToText({
+      ...options,
+      client,
+      sessionId,
+      content: options.input,
+    });
+  });
+
+  // New: Explain like I'm 5
+  AIProvider.provide('explainLikeFive', async options => {
+    const sessionId = await createSession({
+      promptName: 'Explain like I am 5',
+      ...options,
+    });
+    return textToText({
+      ...options,
+      client,
+      sessionId,
+      content: options.input,
+    });
+  });
+
+  // New: Suggest follow-up questions
+  AIProvider.provide('suggestFollowUp', async options => {
+    const sessionId = await createSession({
+      promptName: 'Suggest follow-up questions',
+      ...options,
+    });
+    return textToText({
+      ...options,
+      client,
+      sessionId,
+      content: options.input,
+    });
+  });
   //#endregion
 
   AIProvider.provide('session', {

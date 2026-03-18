@@ -962,4 +962,121 @@ export class CopilotContextResolver {
       }
     }
   }
+
+  /**
+   * Enhanced context retrieval with reference awareness
+   * Includes linked blocks and cross-document references
+   */
+  @ResolveField(() => [ContextMatchedDocChunk], {
+    description: 'Match workspace content with reference awareness',
+  })
+  @CallMetric('ai', 'context_match_with_references')
+  async matchWithReferences(
+    @Context() ctx: { req: Request },
+    @Parent() context: CopilotContextType,
+    @Args('content') content: string,
+    @Args('limit', { type: () => SafeIntResolver, nullable: true })
+    limit?: number,
+    @Args('includeReferences', { nullable: true })
+    includeReferences?: boolean,
+    @Args('maxDepth', { type: () => SafeIntResolver, nullable: true })
+    maxDepth?: number,
+    @Args('threshold', { type: () => Float, nullable: true })
+    threshold?: number
+  ): Promise<ContextMatchedDocChunk[]> {
+    if (!this.context.canEmbedding) {
+      return [];
+    }
+
+    try {
+      return await this.context.matchWithReferences(
+        context.workspaceId,
+        content,
+        {
+          topK: limit,
+          includeReferences,
+          maxDepth,
+          signal: getSignal(ctx.req).signal,
+          threshold,
+        }
+      );
+    } catch (e: any) {
+      // Log error but return empty array for graceful degradation
+      this.logger.debug('matchWithReferences failed, falling back to standard match', e);
+      return [];
+    }
+  }
 }
+
+// ================== Additional Types ==================
+
+@ObjectType('DocWithContext')
+class DocWithContextType {
+  @Field(() => ID)
+  docId!: string;
+
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String)
+  content!: string;
+
+  @Field(() => [DocReferenceType], { nullable: true })
+  references?: DocReferenceType[];
+}
+
+@ObjectType('DocReference')
+class DocReferenceType {
+  @Field(() => ID)
+  docId!: string;
+
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String)
+  content!: string;
+}
+
+@Resolver(() => DocType)
+export class DocWithContextResolver {
+  constructor(
+    private readonly context: CopilotContextService,
+    private readonly ac: AccessController
+  ) {}
+
+  @ResolveField(() => DocWithContextType, {
+    description: 'Get document with its references and linked content',
+    nullable: true,
+  })
+  async withContext(
+    @Parent() doc: DocType,
+    @CurrentUser() user: CurrentUser,
+    @Args('includeReferences', { nullable: true })
+    includeReferences?: boolean,
+    @Args('maxReferences', { type: () => SafeIntResolver, nullable: true })
+    maxReferences?: number
+  ) {
+    await this.ac
+      .user(user.id)
+      .workspace(doc.workspaceId)
+      .doc(doc.id)
+      .can('Doc.Read');
+
+    const result = await this.context.getDocWithContext(doc.workspaceId, doc.id, {
+      includeReferences,
+      maxReferences,
+    });
+
+    if (!result) {
+      return null;
+    }
+
+    return {
+      docId: result.docId,
+      title: result.title,
+      content: result.content,
+      references: result.references,
+    };
+  }
+}
+

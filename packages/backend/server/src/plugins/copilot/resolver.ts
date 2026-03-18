@@ -957,3 +957,6 @@ export class PromptsManagementResolver {
     return true;
   }
 }
+
+// Export for module import
+export { UserPromptResolver } from './prompt/user-resolver';

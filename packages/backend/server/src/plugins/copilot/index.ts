@@ -20,15 +20,17 @@ import { CopilotEmbeddingJob } from './embedding';
 import { WorkspaceMcpController } from './mcp/controller';
 import { WorkspaceMcpProvider } from './mcp/provider';
 import { ChatMessageCache } from './message';
-import { PromptService } from './prompt';
+import { PromptService, UserPromptService } from './prompt';
 import { CopilotProviderFactory, CopilotProviders } from './providers';
 import {
   CopilotResolver,
   PromptsManagementResolver,
   UserCopilotResolver,
+  UserPromptResolver,
 } from './resolver';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
+import { UserPromptService } from './prompt';
 import {
   CopilotTranscriptionResolver,
   CopilotTranscriptionService,
@@ -59,6 +61,7 @@ import {
     CopilotResolver,
     ChatMessageCache,
     PromptService,
+    UserPromptService,
     CopilotStorage,
     // workflow
     CopilotWorkflowService,
@@ -80,6 +83,7 @@ import {
     UserCopilotResolver,
     PromptsManagementResolver,
     CopilotContextRootResolver,
+    UserPromptResolver,
     // mcp
     WorkspaceMcpProvider,
   ],

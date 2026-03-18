@@ -4,6 +4,7 @@ import type { ComponentType } from 'react';
 import CONFIG_DESCRIPTORS from '../../config.json';
 import type { ConfigInputProps } from './config-input-row';
 import { SendTestEmail } from './operations/send-test-email';
+import { StorageRenderer } from './storage-config/storage-renderer';
 export type ConfigType = 'String' | 'Number' | 'Boolean' | 'JSON' | 'Enum';
 
 type ConfigDescriptor = {
@@ -19,7 +20,8 @@ type AppConfigDescriptors = typeof CONFIG_DESCRIPTORS;
 type AppConfigModule = keyof AppConfigDescriptors;
 type ModuleConfigDescriptors<M extends AppConfigModule> =
   AppConfigDescriptors[M];
-type ConfigGroup<T extends AppConfigModule> = {
+
+type ConfigGroupBase<T extends AppConfigModule> = {
   name: string;
   module: T;
   fields: Array<
@@ -34,6 +36,29 @@ type ConfigGroup<T extends AppConfigModule> = {
     appConfig: AppConfig;
   }>[];
 };
+
+type ConfigGroupWithRenderer<T extends AppConfigModule> = Omit<
+  ConfigGroupBase<T>,
+  'fields'
+> & {
+  fields?: Array<
+    | keyof ModuleConfigDescriptors<T>
+    | ({
+        key: keyof ModuleConfigDescriptors<T>;
+        sub?: string;
+        desc?: string;
+      } & Partial<ConfigInputProps>)
+  >;
+  customRenderer?: ComponentType<{
+    appConfig: AppConfig;
+    patchedAppConfig: AppConfig;
+    onUpdate: (path: string, value: any) => void;
+  }>;
+};
+
+export type ConfigGroup<T extends AppConfigModule> =
+  | ConfigGroupBase<T>
+  | ConfigGroupWithRenderer<T>;
 const IGNORED_MODULES: (keyof AppConfig)[] = [];
 
 if (environment.isSelfHosted) {
@@ -94,51 +119,8 @@ export const KNOWN_CONFIG_GROUPS = [
   {
     name: 'Storage',
     module: 'storages',
-    fields: [
-      {
-        key: 'blob.storage',
-        desc: 'The storage provider for user uploaded blobs',
-        sub: 'provider',
-        type: 'Enum',
-        options: ['fs', 'aws-s3', 'cloudflare-r2'],
-      },
-      {
-        key: 'blob.storage',
-        sub: 'bucket',
-        type: 'String',
-        desc: 'The bucket name for user uploaded blobs storage',
-      },
-      {
-        key: 'blob.storage',
-        sub: 'config',
-        type: 'JSON',
-        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
-      },
-      {
-        key: 'avatar.storage',
-        desc: 'The storage provider for user avatars',
-        sub: 'provider',
-        type: 'Enum',
-        options: ['fs', 'aws-s3', 'cloudflare-r2'],
-      },
-      {
-        key: 'avatar.storage',
-        sub: 'bucket',
-        type: 'String',
-        desc: 'The bucket name for user avatars storage',
-      },
-      {
-        key: 'avatar.storage',
-        sub: 'config',
-        type: 'JSON',
-        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
-      },
-      {
-        key: 'avatar.publicPath',
-        type: 'String',
-        desc: 'The public path prefix for user avatars(e.g. https://my-bucket.s3.amazonaws.com/)',
-      },
-    ],
+    fields: ['avatar.publicPath'],
+    customRenderer: StorageRenderer,
   } as ConfigGroup<'storages'>,
   {
     name: 'OAuth',
@@ -163,19 +145,19 @@ export const KNOWN_CONFIG_GROUPS = [
         desc: 'The storage provider for copilot blobs',
         sub: 'provider',
         type: 'Enum',
-        options: ['fs', 'aws-s3', 'cloudflare-r2'],
+        options: ['fs', 'aws-s3', 'cloudflare-r2', 'google-drive'],
       },
       {
         key: 'storage',
         sub: 'bucket',
         type: 'String',
-        desc: 'The bucket name for copilot blobs storage',
+        desc: 'The bucket name/folder for copilot blobs storage',
       },
       {
         key: 'storage',
         sub: 'config',
         type: 'JSON',
-        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
+        desc: 'The config for the storage provider (S3: endpoint/region/credentials, GDrive: folderId/credentials).',
       },
     ],
   } as ConfigGroup<'copilot'>,

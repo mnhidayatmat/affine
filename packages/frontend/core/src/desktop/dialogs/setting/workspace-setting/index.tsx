@@ -13,11 +13,13 @@ import {
   PropertyIcon,
   SaveIcon,
   SettingsIcon,
+  SparkleIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
 import type { SettingSidebarItem, SettingState } from '../types';
+import { WorkspaceSettingAIPrompts } from './ai-prompts';
 import { WorkspaceSettingBilling } from './billing';
 import { IntegrationSetting } from './integration';
 import { WorkspaceSettingLicense } from './license';
@@ -57,6 +59,8 @@ export const WorkspaceSetting = ({
       return <IntegrationSetting />;
     case 'workspace:embedding':
       return <EmbeddingSettings />;
+    case 'workspace:ai-prompts':
+      return <WorkspaceSettingAIPrompts />;
     default:
       return null;
   }
@@ -103,6 +107,12 @@ export const useWorkspaceSettingList = (): SettingSidebarItem[] => {
         title: t['com.affine.integration.integrations'](),
         icon: <IntegrationsIcon />,
         testId: 'workspace-setting:integrations',
+      },
+      {
+        key: 'workspace:ai-prompts',
+        title: 'AI Prompts',
+        icon: <SparkleIcon />,
+        testId: 'workspace-setting:ai-prompts',
       },
       {
         key: 'workspace:storage',

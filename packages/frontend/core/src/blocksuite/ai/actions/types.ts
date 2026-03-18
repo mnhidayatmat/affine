@@ -45,6 +45,21 @@ export const textTones = [
   'Humorous',
 ] as const;
 
+export const writingStyles = [
+  'Professional',
+  'Casual',
+  'Academic',
+  'Creative',
+  'Journalistic',
+] as const;
+
+export const socialPlatforms = [
+  'Twitter',
+  'LinkedIn',
+  'Instagram',
+  'Threads',
+] as const;
+
 export const imageFilterStyles = [
   'Clay style',
   'Sketch style',
@@ -163,6 +178,14 @@ declare global {
       tone: (typeof textTones)[number];
     }
 
+    interface ChangeStyleOptions extends AITextActionOptions {
+      style: (typeof writingStyles)[number];
+    }
+
+    interface RepurposeToSocialOptions extends AITextActionOptions {
+      platform: (typeof socialPlatforms)[number];
+    }
+
     interface ExpandMindMap extends AITextActionOptions {
       mindmap: string;
     }
@@ -272,6 +295,23 @@ declare global {
         options: T
       ): Promise<AIActionTextResponse<T>>;
       generateCaption<T extends AITextActionOptions>(
+        options: T
+      ): Promise<AIActionTextResponse<T>>;
+
+      // New: Additional AI actions
+      changeStyle<T extends ChangeStyleOptions>(
+        options: T
+      ): Promise<AIActionTextResponse<T>>;
+      repurposeToSocial<T extends RepurposeToSocialOptions>(
+        options: T
+      ): Promise<AIActionTextResponse<T>>;
+      brainstormProsCons<T extends AITextActionOptions>(
+        options: T
+      ): Promise<AIActionTextResponse<T>>;
+      explainLikeFive<T extends AITextActionOptions>(
+        options: T
+      ): Promise<AIActionTextResponse<T>>;
+      suggestFollowUp<T extends AITextActionOptions>(
         options: T
       ): Promise<AIActionTextResponse<T>>;
     }

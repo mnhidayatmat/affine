@@ -51,6 +51,7 @@ model User {
   AccessToken                 AccessToken[]
   workspaceCalendars          WorkspaceCalendar[]
   workspaceMemberLastAccesses WorkspaceMemberLastAccess[]
+  userPrompts                UserPrompt[]
 
   @@index([email])
   @@map("users")
@@ -155,6 +156,7 @@ model Workspace {
   workspaceAdminStatsDaily   WorkspaceAdminStatsDaily[]
   workspaceDocViewDaily      WorkspaceDocViewDaily[]
   workspaceMemberLastAccess  WorkspaceMemberLastAccess[]
+  userPrompts                UserPrompt[]
 
   @@index([lastCheckEmbeddings])
   @@index([createdAt])
@@ -501,6 +503,32 @@ model AiPrompt {
   sessions AiSession[]
 
   @@map("ai_prompts_metadata")
+}
+
+model UserPrompt {
+  id          String   @id @default(uuid()) @db.VarChar
+  userId      String   @map("user_id") @db.VarChar
+  workspaceId String?  @map("workspace_id") @db.VarChar
+  name        String   @db.VarChar
+  action      String   @default("custom") @db.VarChar
+  model       String   @default("gpt-5-mini") @db.VarChar
+  systemPrompt String  @map("system_prompt") @db.Text
+  userPrompt  String   @map("user_prompt") @db.Text
+  variables   Json?    @db.Json
+  isPublic    Boolean  @default(false) @map("is_public")
+  usageCount  Int      @default(0) @map("usage_count")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([userId, workspaceId])
+  @@index([isPublic])
+  @@map("user_prompts")
 }
 
 model AiSessionMessage {

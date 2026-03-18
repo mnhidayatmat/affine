@@ -2,11 +2,19 @@ import { Type } from '@nestjs/common';
 
 import { JSONSchema } from '../../config';
 import { FsStorageConfig, FsStorageProvider } from './fs';
+import {
+  GDriveStorageConfig,
+  GDriveStorageProvider,
+} from './gdrive';
 import { StorageProvider } from './provider';
 import { R2StorageConfig, R2StorageProvider } from './r2';
 import { S3StorageConfig, S3StorageProvider } from './s3';
 
-export type StorageProviderName = 'fs' | 'aws-s3' | 'cloudflare-r2';
+export type StorageProviderName =
+  | 'fs'
+  | 'aws-s3'
+  | 'cloudflare-r2'
+  | 'google-drive';
 export const StorageProviders: Record<
   StorageProviderName,
   Type<StorageProvider>
@@ -14,6 +22,7 @@ export const StorageProviders: Record<
   fs: FsStorageProvider,
   'aws-s3': S3StorageProvider,
   'cloudflare-r2': R2StorageProvider,
+  'google-drive': GDriveStorageProvider,
 };
 
 export type StorageProviderConfig = { bucket: string } & (
@@ -28,6 +37,10 @@ export type StorageProviderConfig = { bucket: string } & (
   | {
       provider: 'cloudflare-r2';
       config: R2StorageConfig;
+    }
+  | {
+      provider: 'google-drive';
+      config: GDriveStorageConfig;
     }
 );
 
@@ -83,6 +96,78 @@ const S3ConfigSchema: JSONSchema = {
         },
         sessionToken: {
           type: 'string',
+        },
+      },
+    },
+  },
+};
+
+const GDriveConfigSchema: JSONSchema = {
+  type: 'object',
+  description: 'The config for the Google Drive storage provider.',
+  properties: {
+    folderId: {
+      type: 'string',
+      description:
+        'The folder ID in Google Drive where files will be stored. If not provided, files will be stored in the root of My Drive.',
+    },
+    useServiceAccount: {
+      type: 'boolean',
+      description:
+        'Whether to use service account authentication. If false, will use OAuth2 client credentials.',
+    },
+    credentials: {
+      type: 'object',
+      description: 'Service account credentials.',
+      properties: {
+        client_email: {
+          type: 'string',
+          description: 'Service account client email.',
+        },
+        private_key: {
+          type: 'string',
+          description: 'Service account private key.',
+        },
+        project_id: {
+          type: 'string',
+          description: 'Google Cloud project ID.',
+        },
+      },
+    },
+    oauth: {
+      type: 'object',
+      description: 'OAuth2 client credentials.',
+      properties: {
+        clientId: {
+          type: 'string',
+          description: 'OAuth2 client ID.',
+        },
+        clientSecret: {
+          type: 'string',
+          description: 'OAuth2 client secret.',
+        },
+        refreshToken: {
+          type: 'string',
+          description: 'OAuth2 refresh token.',
+        },
+        accessToken: {
+          type: 'string',
+          description: 'OAuth2 access token.',
+        },
+      },
+    },
+    sharing: {
+      type: 'object',
+      description: 'File sharing settings.',
+      properties: {
+        public: {
+          type: 'boolean',
+          description:
+            'Make files publicly accessible via "anyone with the link".',
+        },
+        domain: {
+          type: 'string',
+          description: 'Domain to share files with (for Google Workspace).',
         },
       },
     },
@@ -167,6 +252,19 @@ export const StorageJSONSchema: JSONSchema = {
             },
           },
         },
+      },
+    },
+    {
+      type: 'object',
+      properties: {
+        provider: {
+          type: 'string',
+          enum: ['google-drive'],
+        },
+        bucket: {
+          type: 'string',
+        },
+        config: GDriveConfigSchema,
       },
     },
   ],

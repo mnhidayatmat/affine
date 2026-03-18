@@ -65,6 +65,32 @@ export class AffineAIPanelWidget extends WidgetComponent {
       scrollbar-width: none !important;
       z-index: var(--affine-z-index-popover);
       --affine-font-family: var(--affine-font-sans-family);
+
+      /* Smooth animations */
+      transition: opacity 0.2s ease-out, transform 0.2s ease-out,
+        box-shadow 0.2s ease-out;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    :host([data-state='generating']) {
+      animation: none;
+      transition: box-shadow 0.3s ease-out;
+    }
+
+    :host([data-state='generating']) {
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
     }
 
     :host([data-app-theme='light']) {
@@ -89,6 +115,18 @@ export class AffineAIPanelWidget extends WidgetComponent {
       width: 100%;
       height: fit-content;
       padding: 10px 0;
+      animation: slideIn 0.2s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .ai-panel-container:not(:has(ai-panel-generating)) {
@@ -103,6 +141,26 @@ export class AffineAIPanelWidget extends WidgetComponent {
 
     :host([data-state='hidden']) {
       display: none;
+    }
+
+    /* Smooth content transitions */
+    ai-panel-answer,
+    ai-panel-generating,
+    ai-panel-error {
+      transition: opacity 0.15s ease-in;
+    }
+
+    ai-panel-answer {
+      animation: contentFadeIn 0.2s ease-out;
+    }
+
+    @keyframes contentFadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
     }
   `;
 

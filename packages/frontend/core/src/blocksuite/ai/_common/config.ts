@@ -63,6 +63,22 @@ export const toneSubItem: AISubItemConfig[] = textTones.map(tone => {
   };
 });
 
+export const styleSubItem: AISubItemConfig[] = writingStyles.map(style => {
+  return {
+    type: style,
+    testId: `action-change-style-${style.toLowerCase()}`,
+    handler: actionToHandler('changeStyle', AIStarIconWithAnimation, { style }),
+  };
+});
+
+export const socialSubItem: AISubItemConfig[] = socialPlatforms.map(platform => {
+  return {
+    type: platform,
+    testId: `action-repurpose-social-${platform.toLowerCase()}`,
+    handler: actionToHandler('repurposeToSocial', AIStarIconWithAnimation, { platform }),
+  };
+});
+
 export function createImageFilterSubItem(
   trackerOptions?: BlockSuitePresets.TrackerOptions
 ) {
@@ -164,6 +180,13 @@ const EditTextAIGroup: AIItemGroupConfig = {
       subItem: toneSubItem,
     },
     {
+      name: 'Change writing style to',
+      testId: 'action-change-style',
+      icon: ImproveWritingIcon(),
+      showWhen: textBlockShowWhen,
+      subItem: styleSubItem,
+    },
+    {
       name: 'Improve writing',
       testId: 'action-improve-writing',
       icon: ImproveWritingIcon(),
@@ -232,6 +255,13 @@ const DraftFromTextAIGroup: AIItemGroupConfig = {
       showWhen: textBlockShowWhen,
       handler: actionToHandler('brainstorm', AIPenIconWithAnimation),
     },
+    {
+      name: 'Repurpose to social media',
+      testId: 'action-repurpose-social',
+      icon: CommentIcon(),
+      showWhen: textBlockShowWhen,
+      subItem: socialSubItem,
+    },
   ],
 };
 
@@ -292,6 +322,13 @@ const ReviewTextAIGroup: AIItemGroupConfig = {
       icon: SelectionIcon(),
       showWhen: textBlockShowWhen,
       handler: actionToHandler('explain', AIStarIconWithAnimation),
+    },
+    {
+      name: 'Explain like I am 5',
+      testId: 'action-explain-like-five',
+      icon: ExplainIcon(),
+      showWhen: textBlockShowWhen,
+      handler: actionToHandler('explainLikeFive', AIStarIconWithAnimation),
     },
   ],
 };
@@ -372,6 +409,20 @@ const GenerateFromTextAIGroup: AIItemGroupConfig = {
       showWhen: textBlockShowWhen,
       handler: actionToHandler('findActions', AIStarIconWithAnimation),
       beta: true,
+    },
+    {
+      name: 'Brainstorm pros and cons',
+      testId: 'action-pros-cons',
+      icon: SearchIcon(),
+      showWhen: textBlockShowWhen,
+      handler: actionToHandler('brainstormProsCons', AIStarIconWithAnimation),
+    },
+    {
+      name: 'Suggest follow-up questions',
+      testId: 'action-follow-up-questions',
+      icon: SearchIcon(),
+      showWhen: textBlockShowWhen,
+      handler: actionToHandler('suggestFollowUp', AIStarIconWithAnimation),
     },
   ],
 };
