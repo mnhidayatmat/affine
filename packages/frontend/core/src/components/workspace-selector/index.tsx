@@ -1,4 +1,4 @@
-import { Menu, type MenuProps } from '@affine/component';
+import { Menu, type MenuProps, notify } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -6,6 +6,7 @@ import {
   type WorkspaceMetadata,
   WorkspacesService,
 } from '@affine/core/modules/workspace';
+import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import {
   useLiveData,
@@ -13,6 +14,8 @@ import {
   useServices,
 } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
+
+import { WorkspaceDeleteModal } from '../../desktop/dialogs/setting/workspace-setting/preference/delete-leave-workspace/delete';
 
 import { UserWithWorkspaceList } from './user-with-workspace-list';
 import { WorkspaceCard } from './workspace-card';
@@ -54,7 +57,11 @@ export const WorkspaceSelector = ({
     GlobalContextService,
     WorkspacesService,
   });
+  const t = useI18n();
+  const navigateHelper = useNavigateHelper();
   const [innerOpen, setOpened] = useState(false);
+  const [deletingWorkspace, setDeletingWorkspace] =
+    useState<WorkspaceMetadata | null>(null);
   const open = outerOpen ?? innerOpen;
   const onOpenChange = useCallback(
     (open: boolean) => {
@@ -89,6 +96,7 @@ export const WorkspaceSelector = ({
       : null
   );
   const workspaceMetadata = outerWorkspaceMetadata ?? currentWorkspaceMetadata;
+  const workspaces = useLiveData(workspacesService.list.workspaces$);
 
   // revalidate workspace list when open workspace list
   useEffect(() => {
@@ -97,51 +105,99 @@ export const WorkspaceSelector = ({
     }
   }, [workspacesService, open]);
 
-  return (
-    <Menu
-      rootOptions={{
-        open,
-        onOpenChange,
-      }}
-      items={
-        <UserWithWorkspaceList
-          onEventEnd={closeUserWorkspaceList}
-          onClickWorkspace={onSelectWorkspace}
-          onCreatedWorkspace={onCreatedWorkspace}
-          showEnableCloudButton={showEnableCloudButton}
-        />
+  const handleDeleteWorkspace = useCallback(
+    (meta: WorkspaceMetadata) => {
+      closeUserWorkspaceList();
+      setDeletingWorkspace(meta);
+    },
+    [closeUserWorkspaceList]
+  );
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deletingWorkspace) return;
+
+    const currentWsId = globalContextService.globalContext.workspaceId.$.value;
+
+    if (currentWsId === deletingWorkspace.id) {
+      const backWorkspace = workspaces.find(ws => ws.id !== currentWsId);
+      if (backWorkspace) {
+        navigateHelper.jumpToPage(backWorkspace.id, 'all');
+      } else {
+        navigateHelper.jumpToIndex();
       }
-      contentOptions={{
-        // hide trigger
-        sideOffset: dense ? -32 : -58,
-        onInteractOutside: closeUserWorkspaceList,
-        onEscapeKeyDown: closeUserWorkspaceList,
-        ...menuContentOptions,
-        style: {
-          width: '300px',
-          maxHeight: 'min(800px, calc(100vh - 200px))',
-          padding: 0,
-          ...menuContentOptions?.style,
-        },
-      }}
-    >
-      {workspaceMetadata ? (
-        <WorkspaceCard
-          workspaceMetadata={workspaceMetadata}
-          onClick={openUserWorkspaceList}
-          showSyncStatus={showSyncStatus}
-          className={className}
-          showArrowDownIcon={showArrowDownIcon}
-          disable={disable}
-          hideCollaborationIcon={true}
-          hideTeamWorkspaceIcon={true}
-          data-testid="current-workspace-card"
-          dense={dense}
+    }
+
+    try {
+      await workspacesService.deleteWorkspace(deletingWorkspace);
+      notify.success({ title: t['Successfully deleted']() });
+    } catch (err) {
+      console.error('Failed to delete workspace', err);
+      notify.error({ title: t['Failed to delete workspace']() });
+    } finally {
+      setDeletingWorkspace(null);
+    }
+  }, [deletingWorkspace, globalContextService, navigateHelper, t, workspaces, workspacesService]);
+
+  return (
+    <>
+      <Menu
+        rootOptions={{
+          open,
+          onOpenChange,
+        }}
+        items={
+          <UserWithWorkspaceList
+            onEventEnd={closeUserWorkspaceList}
+            onClickWorkspace={onSelectWorkspace}
+            onCreatedWorkspace={onCreatedWorkspace}
+            onDeleteWorkspace={handleDeleteWorkspace}
+            showEnableCloudButton={showEnableCloudButton}
+          />
+        }
+        contentOptions={{
+          // hide trigger
+          sideOffset: dense ? -32 : -58,
+          onInteractOutside: closeUserWorkspaceList,
+          onEscapeKeyDown: closeUserWorkspaceList,
+          ...menuContentOptions,
+          style: {
+            width: '300px',
+            maxHeight: 'min(800px, calc(100vh - 200px))',
+            padding: 0,
+            ...menuContentOptions?.style,
+          },
+        }}
+      >
+        {workspaceMetadata ? (
+          <WorkspaceCard
+            workspaceMetadata={workspaceMetadata}
+            onClick={openUserWorkspaceList}
+            showSyncStatus={showSyncStatus}
+            className={className}
+            showArrowDownIcon={showArrowDownIcon}
+            disable={disable}
+            hideCollaborationIcon={true}
+            hideTeamWorkspaceIcon={true}
+            data-testid="current-workspace-card"
+            dense={dense}
+          />
+        ) : (
+          <span></span>
+        )}
+      </Menu>
+
+      {/* Delete modal rendered outside Menu to avoid onInteractOutside conflicts */}
+      {deletingWorkspace && (
+        <WorkspaceDeleteModal
+          workspaceMetadata={deletingWorkspace}
+          open={!!deletingWorkspace}
+          onOpenChange={open => {
+            if (!open) setDeletingWorkspace(null);
+          }}
+          onConfirm={handleConfirmDelete}
         />
-      ) : (
-        <span></span>
       )}
-    </Menu>
+    </>
   );
 };
 

@@ -55,6 +55,7 @@ interface UserWithWorkspaceListProps {
     metadata: WorkspaceMetadata;
     defaultDocId?: string;
   }) => void;
+  onDeleteWorkspace?: (meta: WorkspaceMetadata) => void;
   showEnableCloudButton?: boolean;
 }
 
@@ -62,6 +63,7 @@ export const UserWithWorkspaceList = ({
   onEventEnd,
   onClickWorkspace,
   onCreatedWorkspace,
+  onDeleteWorkspace,
   showEnableCloudButton,
 }: UserWithWorkspaceListProps) => {
   const globalDialogService = useService(GlobalDialogService);
@@ -122,6 +124,7 @@ export const UserWithWorkspaceList = ({
         <AFFiNEWorkspaceList
           onEventEnd={onEventEnd}
           onClickWorkspace={onClickWorkspace}
+          onDeleteWorkspace={onDeleteWorkspace}
           showEnableCloudButton={showEnableCloudButton}
         />
       </ScrollableContainer>

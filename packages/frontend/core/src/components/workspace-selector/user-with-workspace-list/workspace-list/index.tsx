@@ -1,4 +1,4 @@
-import { IconButton, Menu, MenuItem, notify } from '@affine/component';
+import { IconButton, Menu, MenuItem } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { useSignOut } from '@affine/core/components/hooks/affine/use-sign-out';
@@ -29,9 +29,8 @@ import {
   useService,
   useServiceOptional,
 } from '@toeverything/infra';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
-import { WorkspaceDeleteModal } from '../../../../desktop/dialogs/setting/workspace-setting/preference/delete-leave-workspace/delete';
 import { WorkspaceCard } from '../../workspace-card';
 import { AddServer } from '../add-server';
 import * as styles from './index.css';
@@ -231,20 +230,17 @@ const LocalWorkspaces = ({
 export const AFFiNEWorkspaceList = ({
   onEventEnd,
   onClickWorkspace,
+  onDeleteWorkspace,
   showEnableCloudButton,
 }: {
   onClickWorkspace?: (workspaceMetadata: WorkspaceMetadata) => void;
   onEventEnd?: () => void;
+  onDeleteWorkspace?: (meta: WorkspaceMetadata) => void;
   showEnableCloudButton?: boolean;
 }) => {
   const workspacesService = useService(WorkspacesService);
-  const globalContextService = useService(GlobalContextService);
-  const workspaces = useLiveData(workspacesService.list.workspaces$);
-  const navigateHelper = useNavigateHelper();
-  const t = useI18n();
 
-  const [deletingWorkspace, setDeletingWorkspace] =
-    useState<WorkspaceMetadata | null>(null);
+  const workspaces = useLiveData(workspacesService.list.workspaces$);
 
   const confirmEnableCloud = useEnableCloud();
 
@@ -297,40 +293,10 @@ export const AFFiNEWorkspaceList = ({
 
   const handleDeleteWorkspace = useCallback(
     (metadata: WorkspaceMetadata) => {
-      setDeletingWorkspace(metadata);
+      onDeleteWorkspace?.(metadata);
     },
-    []
+    [onDeleteWorkspace]
   );
-
-  const handleConfirmDelete = useCallback(async () => {
-    if (!deletingWorkspace) {
-      return;
-    }
-
-    const currentWorkspaceId = globalContextService.globalContext.workspaceId.$.value;
-
-    // Navigate away if deleting current workspace
-    if (currentWorkspaceId === deletingWorkspace.id) {
-      const backWorkspace = workspaces.find(
-        ws => ws.id !== currentWorkspaceId
-      );
-      if (backWorkspace) {
-        navigateHelper.jumpToPage(backWorkspace.id, 'all');
-      } else {
-        navigateHelper.jumpToIndex();
-      }
-    }
-
-    try {
-      await workspacesService.deleteWorkspace(deletingWorkspace);
-      notify.success({ title: t['Successfully deleted']() });
-    } catch (err) {
-      console.error('Failed to delete workspace', err);
-      notify.error({ title: t['Failed to delete workspace']() });
-    } finally {
-      setDeletingWorkspace(null);
-    }
-  }, [deletingWorkspace, globalContextService, navigateHelper, t, workspaces, workspacesService]);
 
   return (
     <>
@@ -383,18 +349,6 @@ export const AFFiNEWorkspaceList = ({
       ))}
       <AddServer />
       <Divider size="thinner" />
-
-      {/* Delete Confirmation Modal */}
-      {deletingWorkspace && (
-        <WorkspaceDeleteModal
-          workspaceMetadata={deletingWorkspace}
-          open={!!deletingWorkspace}
-          onOpenChange={open => {
-            if (!open) setDeletingWorkspace(null);
-          }}
-          onConfirm={handleConfirmDelete}
-        />
-      )}
     </>
   );
 };
