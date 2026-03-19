@@ -1,11 +1,7 @@
-import { useMutation } from '@affine/admin/use-mutation';
-import { get } from 'lodash-es';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
-import { ALL_CONFIG_DESCRIPTORS, type AppConfig } from '../config';
-import { updateAppConfigMutation } from '../use-app-config';
-import { type StorageConfig,StorageConfigPanel } from './storage-config-panel';
+import type { AppConfig } from '../config';
+import { type StorageConfig, StorageConfigPanel } from './storage-config-panel';
 
 interface StorageRendererProps {
   appConfig: AppConfig;
@@ -18,15 +14,11 @@ export function StorageRenderer({
   patchedAppConfig,
   onUpdate,
 }: StorageRendererProps) {
-  const navigate = useNavigate();
-  const updateConfig = useMutation(updateAppConfigMutation);
-
   const [blobConfig, setBlobConfig] = useState<StorageConfig | null>(null);
   const [avatarConfig, setAvatarConfig] = useState<StorageConfig | null>(null);
   const [copilotConfig, setCopilotConfig] = useState<StorageConfig | null>(
     null
   );
-  const [hasChanges, setHasChanges] = useState(false);
 
   // Initialize configs from appConfig
   useEffect(() => {
@@ -45,7 +37,6 @@ export function StorageRenderer({
   const handleBlobChange = useCallback(
     (config: StorageConfig) => {
       setBlobConfig(config);
-      setHasChanges(true);
       onUpdate('storages/blob.storage', config);
     },
     [onUpdate]
@@ -54,7 +45,6 @@ export function StorageRenderer({
   const handleAvatarChange = useCallback(
     (config: StorageConfig) => {
       setAvatarConfig(config);
-      setHasChanges(true);
       onUpdate('storages/avatar.storage', config);
     },
     [onUpdate]
@@ -63,7 +53,6 @@ export function StorageRenderer({
   const handleCopilotChange = useCallback(
     (config: StorageConfig) => {
       setCopilotConfig(config);
-      setHasChanges(true);
       onUpdate('copilot/storage', config);
     },
     [onUpdate]
