@@ -14,6 +14,7 @@ import type { AppConfig } from './config';
 import { isEqual } from './utils';
 
 export { type UpdateAppConfigInput };
+export { updateAppConfigMutation };
 
 export type AppConfigUpdates = Record<string, { from: any; to: any }>;
 type SaveResponse =

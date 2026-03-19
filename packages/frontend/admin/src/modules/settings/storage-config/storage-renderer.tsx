@@ -1,14 +1,11 @@
-import { useMutation } from '@affine/admin/libs/react-query';
+import { useMutation } from '@affine/admin/use-mutation';
 import { get } from 'lodash-es';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  ALL_CONFIG_DESCRIPTORS,
-  type AppConfig,
-} from '../config';
-import { StorageConfigPanel, type StorageConfig } from './storage-config-panel';
+import { ALL_CONFIG_DESCRIPTORS, type AppConfig } from '../config';
 import { updateAppConfigMutation } from '../use-app-config';
+import { type StorageConfig,StorageConfigPanel } from './storage-config-panel';
 
 interface StorageRendererProps {
   appConfig: AppConfig;
@@ -26,7 +23,9 @@ export function StorageRenderer({
 
   const [blobConfig, setBlobConfig] = useState<StorageConfig | null>(null);
   const [avatarConfig, setAvatarConfig] = useState<StorageConfig | null>(null);
-  const [copilotConfig, setCopilotConfig] = useState<StorageConfig | null>(null);
+  const [copilotConfig, setCopilotConfig] = useState<StorageConfig | null>(
+    null
+  );
   const [hasChanges, setHasChanges] = useState(false);
 
   // Initialize configs from appConfig
@@ -43,23 +42,32 @@ export function StorageRenderer({
     }
   }, [appConfig, patchedAppConfig]);
 
-  const handleBlobChange = useCallback((config: StorageConfig) => {
-    setBlobConfig(config);
-    setHasChanges(true);
-    onUpdate('storages/blob.storage', config);
-  }, [onUpdate]);
+  const handleBlobChange = useCallback(
+    (config: StorageConfig) => {
+      setBlobConfig(config);
+      setHasChanges(true);
+      onUpdate('storages/blob.storage', config);
+    },
+    [onUpdate]
+  );
 
-  const handleAvatarChange = useCallback((config: StorageConfig) => {
-    setAvatarConfig(config);
-    setHasChanges(true);
-    onUpdate('storages/avatar.storage', config);
-  }, [onUpdate]);
+  const handleAvatarChange = useCallback(
+    (config: StorageConfig) => {
+      setAvatarConfig(config);
+      setHasChanges(true);
+      onUpdate('storages/avatar.storage', config);
+    },
+    [onUpdate]
+  );
 
-  const handleCopilotChange = useCallback((config: StorageConfig) => {
-    setCopilotConfig(config);
-    setHasChanges(true);
-    onUpdate('copilot/storage', config);
-  }, [onUpdate]);
+  const handleCopilotChange = useCallback(
+    (config: StorageConfig) => {
+      setCopilotConfig(config);
+      setHasChanges(true);
+      onUpdate('copilot/storage', config);
+    },
+    [onUpdate]
+  );
 
   return (
     <div className="space-y-6">

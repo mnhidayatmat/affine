@@ -142,7 +142,8 @@ const AdminPanel = ({
         >
           {ALL_SETTING_GROUPS.map(group => {
             const { name, module, fields, operations } = group;
-            const customRenderer = 'customRenderer' in group ? group.customRenderer : undefined;
+            const customRenderer =
+              'customRenderer' in group ? group.customRenderer : undefined;
             const CustomRenderer = customRenderer;
             const dirty = isGroupDirty(module);
             const saving = isGroupSaving(module);
@@ -179,10 +180,6 @@ const AdminPanel = ({
                         appConfig={appConfig}
                         patchedAppConfig={patchedAppConfig}
                         onUpdate={onUpdate}
-                      />
-                    ) : (
-                      <>
-                        {fields.map(field => {
                       />
                     ) : (
                       <>
