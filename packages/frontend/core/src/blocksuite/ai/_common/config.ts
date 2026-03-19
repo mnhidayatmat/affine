@@ -29,8 +29,10 @@ import { actionToHandler } from '../actions/doc-handler';
 import {
   imageFilterStyles,
   imageProcessingTypes,
+  socialPlatforms,
   textTones,
   translateLangs,
+  writingStyles,
 } from '../actions/types';
 import type {
   AIItemGroupConfig,
@@ -71,13 +73,17 @@ export const styleSubItem: AISubItemConfig[] = writingStyles.map(style => {
   };
 });
 
-export const socialSubItem: AISubItemConfig[] = socialPlatforms.map(platform => {
-  return {
-    type: platform,
-    testId: `action-repurpose-social-${platform.toLowerCase()}`,
-    handler: actionToHandler('repurposeToSocial', AIStarIconWithAnimation, { platform }),
-  };
-});
+export const socialSubItem: AISubItemConfig[] = socialPlatforms.map(
+  platform => {
+    return {
+      type: platform,
+      testId: `action-repurpose-social-${platform.toLowerCase()}`,
+      handler: actionToHandler('repurposeToSocial', AIStarIconWithAnimation, {
+        platform,
+      }),
+    };
+  }
+);
 
 export function createImageFilterSubItem(
   trackerOptions?: BlockSuitePresets.TrackerOptions

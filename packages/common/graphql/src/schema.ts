@@ -579,6 +579,8 @@ export interface CopilotContext {
   id: Maybe<Scalars['ID']['output']>;
   /** match file in context */
   matchFiles: Array<ContextMatchedFileChunk>;
+  /** Match workspace content with reference awareness */
+  matchWithReferences: Array<ContextMatchedDocChunk>;
   /** match workspace docs */
   matchWorkspaceDocs: Array<ContextMatchedDocChunk>;
   /** list tags in context */
@@ -590,6 +592,14 @@ export interface CopilotContextMatchFilesArgs {
   content: Scalars['String']['input'];
   limit?: InputMaybe<Scalars['SafeInt']['input']>;
   scopedThreshold?: InputMaybe<Scalars['Float']['input']>;
+  threshold?: InputMaybe<Scalars['Float']['input']>;
+}
+
+export interface CopilotContextMatchWithReferencesArgs {
+  content: Scalars['String']['input'];
+  includeReferences?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['SafeInt']['input']>;
+  maxDepth?: InputMaybe<Scalars['SafeInt']['input']>;
   threshold?: InputMaybe<Scalars['Float']['input']>;
 }
 
@@ -847,6 +857,16 @@ export interface CreateUserInput {
   password?: InputMaybe<Scalars['String']['input']>;
 }
 
+export interface CreateUserPromptInputType {
+  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
+  model?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  systemPrompt?: InputMaybe<Scalars['String']['input']>;
+  userPrompt: Scalars['String']['input'];
+  variables?: InputMaybe<Scalars['JSON']['input']>;
+  workspaceId?: InputMaybe<Scalars['String']['input']>;
+}
+
 export interface CredentialsRequirementType {
   __typename?: 'CredentialsRequirementType';
   password: PasswordLimitsType;
@@ -958,6 +978,13 @@ export interface DocPermissions {
   Doc_Update: Scalars['Boolean']['output'];
   Doc_Users_Manage: Scalars['Boolean']['output'];
   Doc_Users_Read: Scalars['Boolean']['output'];
+}
+
+export interface DocReference {
+  __typename?: 'DocReference';
+  content: Scalars['String']['output'];
+  docId: Scalars['ID']['output'];
+  title: Scalars['String']['output'];
 }
 
 /** User permission in doc */
@@ -1241,6 +1268,16 @@ export enum ErrorNames {
   WORKSPACE_PERMISSION_NOT_FOUND = 'WORKSPACE_PERMISSION_NOT_FOUND',
   WRONG_SIGN_IN_CREDENTIALS = 'WRONG_SIGN_IN_CREDENTIALS',
   WRONG_SIGN_IN_METHOD = 'WRONG_SIGN_IN_METHOD',
+}
+
+export interface ExecuteUserPromptInputType {
+  variables?: InputMaybe<Scalars['JSON']['input']>;
+}
+
+export interface ExecutedUserPrompt {
+  __typename?: 'ExecutedUserPrompt';
+  messages: Array<PromptMessage>;
+  model: Scalars['String']['output'];
 }
 
 export interface ExpectToGrantDocUserRolesDataType {
@@ -1722,6 +1759,8 @@ export interface Mutation {
   createSelfhostWorkspaceCustomerPortal: Scalars['String']['output'];
   /** Create a new user */
   createUser: UserType;
+  /** Create a new user prompt */
+  createUserPrompt: UserPrompt;
   /** Create a new workspace */
   createWorkspace: WorkspaceType;
   deactivateLicense: Scalars['Boolean']['output'];
@@ -1733,9 +1772,13 @@ export interface Mutation {
   deleteReply: Scalars['Boolean']['output'];
   /** Delete a user account */
   deleteUser: DeleteAccount;
+  /** Delete a user prompt */
+  deleteUserPrompt: UserPrompt;
   deleteWorkspace: Scalars['Boolean']['output'];
   /** Reenable an banned user */
   enableUser: UserType;
+  /** Execute a user prompt with variables */
+  executeUserPrompt: ExecutedUserPrompt;
   /** Create a chat session */
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
@@ -1818,6 +1861,8 @@ export interface Mutation {
   updateUser: UserType;
   /** update user enabled feature */
   updateUserFeatures: Array<FeatureType>;
+  /** Update a user prompt */
+  updateUserPrompt: UserPrompt;
   /** Update workspace */
   updateWorkspace: WorkspaceType;
   updateWorkspaceCalendars: WorkspaceCalendarObjectType;
@@ -1980,6 +2025,10 @@ export interface MutationCreateUserArgs {
   input: CreateUserInput;
 }
 
+export interface MutationCreateUserPromptArgs {
+  input: CreateUserPromptInputType;
+}
+
 export interface MutationCreateWorkspaceArgs {
   init?: InputMaybe<Scalars['Upload']['input']>;
 }
@@ -2007,12 +2056,21 @@ export interface MutationDeleteUserArgs {
   id: Scalars['String']['input'];
 }
 
+export interface MutationDeleteUserPromptArgs {
+  id: Scalars['String']['input'];
+}
+
 export interface MutationDeleteWorkspaceArgs {
   id: Scalars['String']['input'];
 }
 
 export interface MutationEnableUserArgs {
   id: Scalars['String']['input'];
+}
+
+export interface MutationExecuteUserPromptArgs {
+  id: Scalars['String']['input'];
+  input?: InputMaybe<ExecuteUserPromptInputType>;
 }
 
 export interface MutationForkCopilotSessionArgs {
@@ -2260,6 +2318,11 @@ export interface MutationUpdateUserFeaturesArgs {
   id: Scalars['String']['input'];
 }
 
+export interface MutationUpdateUserPromptArgs {
+  id: Scalars['String']['input'];
+  input: UpdateUserPromptInputType;
+}
+
 export interface MutationUpdateWorkspaceArgs {
   input: UpdateWorkspaceInput;
 }
@@ -2469,6 +2532,12 @@ export enum Permission {
   Owner = 'Owner',
 }
 
+export interface PromptMessage {
+  __typename?: 'PromptMessage';
+  content: Scalars['String']['output'];
+  role: Scalars['String']['output'];
+}
+
 /** The mode which the public doc default in */
 export enum PublicDocMode {
   Edgeless = 'Edgeless',
@@ -2513,6 +2582,8 @@ export interface Query {
   queryWorkspaceEmbeddingStatus: ContextWorkspaceEmbeddingStatus;
   /** @deprecated use currentUser.revealedAccessTokens */
   revealedAccessTokens: Array<RevealedAccessToken>;
+  /** Search user prompts */
+  searchUserPrompts: Array<UserPrompt>;
   /** server config */
   serverConfig: ServerConfigType;
   /** Get user by email */
@@ -2580,6 +2651,11 @@ export interface QueryPublicUserByIdArgs {
 
 export interface QueryQueryWorkspaceEmbeddingStatusArgs {
   workspaceId: Scalars['String']['input'];
+}
+
+export interface QuerySearchUserPromptsArgs {
+  query: Scalars['String']['input'];
+  workspaceId?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface QueryUserArgs {
@@ -3082,6 +3158,15 @@ export interface UpdateUserInput {
   name?: InputMaybe<Scalars['String']['input']>;
 }
 
+export interface UpdateUserPromptInputType {
+  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
+  model?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  systemPrompt?: InputMaybe<Scalars['String']['input']>;
+  userPrompt?: InputMaybe<Scalars['String']['input']>;
+  variables?: InputMaybe<Scalars['JSON']['input']>;
+}
+
 export interface UpdateUserSettingsInput {
   /** Receive comment email */
   receiveCommentEmail?: InputMaybe<Scalars['Boolean']['input']>;
@@ -3119,6 +3204,28 @@ export interface UserImportFailedType {
 export type UserImportResultType = UserImportFailedType | UserType;
 
 export type UserOrLimitedUser = LimitedUserType | UserType;
+
+export interface UserPrompt {
+  __typename?: 'UserPrompt';
+  action: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  isPublic: Scalars['Boolean']['output'];
+  model: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  systemPrompt: Scalars['String']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  usageCount: Scalars['Int']['output'];
+  userPrompt: Scalars['String']['output'];
+  variables: Maybe<Array<UserPromptVariable>>;
+}
+
+export interface UserPromptVariable {
+  __typename?: 'UserPromptVariable';
+  default: Scalars['String']['output'];
+  description: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+}
 
 export interface UserQuotaHumanReadableType {
   __typename?: 'UserQuotaHumanReadableType';
@@ -3199,6 +3306,10 @@ export interface UserType {
   subscriptions: Array<SubscriptionType>;
   /** @deprecated use [/api/auth/sign-in?native=true] instead */
   token: TokenType;
+  /** Get a specific user prompt by ID */
+  userPrompt: Maybe<UserPrompt>;
+  /** Get user prompts and public prompts */
+  userPrompts: Array<UserPrompt>;
 }
 
 export interface UserTypeCopilotArgs {
@@ -3212,6 +3323,15 @@ export interface UserTypeInvoicesArgs {
 
 export interface UserTypeNotificationsArgs {
   pagination: PaginationInput;
+}
+
+export interface UserTypeUserPromptArgs {
+  id: Scalars['String']['input'];
+}
+
+export interface UserTypeUserPromptsArgs {
+  includePublic?: InputMaybe<Scalars['Boolean']['input']>;
+  workspaceId?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface ValidationErrorDataType {

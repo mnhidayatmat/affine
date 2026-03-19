@@ -1,5 +1,3 @@
-import { gql } from '@affine/graphql';
-
 export type AIPromptListItem = {
   id: string;
   name: string;
@@ -7,14 +5,17 @@ export type AIPromptListItem = {
   model: string;
   systemPrompt: string;
   userPrompt: string;
-  variables: Record<string, { type: string; default: string; description: string }> | null;
+  variables: Record<
+    string,
+    { type: string; default: string; description: string }
+  > | null;
   isPublic: boolean;
   usageCount: number;
   createdAt: Date;
   updatedAt: Date;
 };
 
-const LIST_USER_PROMPTS = gql(`
+const LIST_USER_PROMPTS = `
   query ListUserPrompts($workspaceId: String, $includePublic: Boolean) {
     workspace(id: $workspaceId) {
       userPrompts(includePublic: $includePublic) {
@@ -32,9 +33,9 @@ const LIST_USER_PROMPTS = gql(`
       }
     }
   }
-`);
+`;
 
-const CREATE_USER_PROMPT = gql(`
+const CREATE_USER_PROMPT = `
   mutation CreateUserPrompt($input: CreateUserPromptInput!) {
     createUserPrompt(input: $input) {
       id
@@ -50,9 +51,9 @@ const CREATE_USER_PROMPT = gql(`
       updatedAt
     }
   }
-`);
+`;
 
-const UPDATE_USER_PROMPT = gql(`
+const UPDATE_USER_PROMPT = `
   mutation UpdateUserPrompt($id: ID!, $input: UpdateUserPromptInput!) {
     updateUserPrompt(id: $id, input: $input) {
       id
@@ -68,17 +69,17 @@ const UPDATE_USER_PROMPT = gql(`
       updatedAt
     }
   }
-`);
+`;
 
-const DELETE_USER_PROMPT = gql(`
+const DELETE_USER_PROMPT = `
   mutation DeleteUserPrompt($id: ID!) {
     deleteUserPrompt(id: $id) {
       id
     }
   }
-`);
+`;
 
-const EXECUTE_USER_PROMPT = gql(`
+const EXECUTE_USER_PROMPT = `
   mutation ExecuteUserPrompt($id: ID!, $input: ExecuteUserPromptInput) {
     executeUserPrompt(id: $id, input: $input) {
       model
@@ -88,21 +89,19 @@ const EXECUTE_USER_PROMPT = gql(`
       }
     }
   }
-`);
+`;
 
 export class AIPromptClient {
   constructor(private workspaceId: string) {}
 
-  async listPrompts(
-    includePublic = true
-  ): Promise<AIPromptListItem[]> {
+  async listPrompts(includePublic = true): Promise<AIPromptListItem[]> {
     const response = await fetch('/api/graphql', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: LIST_USER_PROMPTS.loc?.source.body,
+        query: LIST_USER_PROMPTS,
         variables: {
           workspaceId: this.workspaceId,
           includePublic,
@@ -128,7 +127,7 @@ export class AIPromptClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: CREATE_USER_PROMPT.loc?.source.body,
+        query: CREATE_USER_PROMPT,
         variables: {
           input: {
             ...data,
@@ -162,7 +161,7 @@ export class AIPromptClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: UPDATE_USER_PROMPT.loc?.source.body,
+        query: UPDATE_USER_PROMPT,
         variables: { id, input: data },
       }),
     });
@@ -181,7 +180,7 @@ export class AIPromptClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: DELETE_USER_PROMPT.loc?.source.body,
+        query: DELETE_USER_PROMPT,
         variables: { id },
       }),
     });
@@ -195,14 +194,17 @@ export class AIPromptClient {
   async executePrompt(
     id: string,
     variables?: Record<string, unknown>
-  ): Promise<{ model: string; messages: Array<{ role: string; content: string }> }> {
+  ): Promise<{
+    model: string;
+    messages: Array<{ role: string; content: string }>;
+  }> {
     const response = await fetch('/api/graphql', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: EXECUTE_USER_PROMPT.loc?.source.body,
+        query: EXECUTE_USER_PROMPT,
         variables: {
           id,
           input: { variables },

@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd:*)",
+      "Bash(echo Fetch test complete:*)",
+      "Bash(node:*)",
+      "Bash(docker:*)",
+      "Bash(which:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" --version 2>&1 && \"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" compose version 2>&1)",
+      "Bash(head:*)",
+      "Bash(sleep 15 && \"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" ps 2>&1)",
+      "Bash(wsl:*)",
+      "Bash(rustc:*)",
+      "Bash(ls:*)",
+      "Bash(yarn --version 2>/dev/null && node --version 2>/dev/null)",
+      "Bash(echo Yarn not available:*)",
+      "Bash(echo Need to install Yarn:*)",
+      "Bash(npm:*)",
+      "Bash(winget install:*)",
+      "Bash(corepack enable:*)",
+      "Bash(npx yarn@berry:*)",
+      "Bash(echo Install status: $?:*)",
+      "Bash(where cargo:*)",
+      "Bash(export:*)",
+      "Bash(tail:*)",
+      "Bash(git checkout:*)",
+      "Bash(cd /d/App/Project/affine/packages/common/graphql && yarn build 2>&1)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(cd /d/App/Project/affine && yarn affine build @affine/server 2>&1)",
+      "Bash(cd /d/App/Project/affine && yarn affine build -p @affine/server 2>&1)",
+      "Bash(cd /d/App/Project/affine && git push origin main 2>&1)",
+      "Bash(cd /d/App/Project/affine && git add -A && git commit -m \"$\\(cat <<'EOF'\nfix: resolve build errors and missing imports\n\n- Fix missing imports \\(writingStyles, socialPlatforms\\) in AI config\n- Fix extractEmojiAsIcon prop passed to DOM element in navigation\n- Remove duplicate UserPromptService import in copilot\n- Fix decorator imports from @nestjs/common to @nestjs/graphql\n- Fix relative import paths in user-resolver\n- Fix BadRequestException import in user-prompts\n- Comment out broken DocWithContextResolver\n- Export DocType class for other modules\n- Replace SparkleIcon with AiIcon\n- Fix JSX curly brace escaping in AI prompts\n- Fix GlobalStyle to Global from @emotion/react\n- Remove gql import, use template strings directly\n- Regenerate GraphQL schema types\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\" 2>&1)"
+    ]
+  }
+}

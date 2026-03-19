@@ -7,13 +7,13 @@ import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import {
   AiEmbeddingIcon,
+  AiIcon,
   CollaborationIcon,
   IntegrationsIcon,
   PaymentIcon,
   PropertyIcon,
   SaveIcon,
   SettingsIcon,
-  SparkleIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useMemo } from 'react';
@@ -111,7 +111,7 @@ export const useWorkspaceSettingList = (): SettingSidebarItem[] => {
       {
         key: 'workspace:ai-prompts',
         title: 'AI Prompts',
-        icon: <SparkleIcon />,
+        icon: <AiIcon />,
         testId: 'workspace-setting:ai-prompts',
       },
       {

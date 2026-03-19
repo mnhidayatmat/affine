@@ -1,11 +1,11 @@
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
 
-import { GlobalStyle } from '@emotion/react';
+import { Global } from '@emotion/react';
 
 import type { AIPromptListItem } from '../../../../../components/affine/ai-prompts/client';
 import { AIPromptClient } from '../../../../../components/affine/ai-prompts/client';
-import { WorkspaceService } from '../../../../modules/workspace';
+import { WorkspaceService } from '@affine/core/modules/workspace';
 import { aiPromptsStyles } from './styles';
 
 export const WorkspaceSettingAIPrompts = () => {
@@ -18,7 +18,9 @@ export const WorkspaceSettingAIPrompts = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingPrompt, setEditingPrompt] = useState<AIPromptListItem | null>(null);
+  const [editingPrompt, setEditingPrompt] = useState<AIPromptListItem | null>(
+    null
+  );
 
   useEffect(() => {
     setClient(new AIPromptClient(workspaceId));
@@ -90,7 +92,9 @@ export const WorkspaceSettingAIPrompts = () => {
         <div className="ai-prompts-header">
           <div className="ai-prompts-title">
             <h2>AI Prompts Library</h2>
-            <p class="subtitle">Create and manage custom AI prompts for your workspace</p>
+            <p class="subtitle">
+              Create and manage custom AI prompts for your workspace
+            </p>
           </div>
           <button
             className="btn-primary"
@@ -256,8 +260,7 @@ const AIPromptEditor = ({
     name: prompt?.name || '',
     systemPrompt: prompt?.systemPrompt || 'You are a helpful AI assistant.',
     userPrompt:
-      prompt?.userPrompt ||
-      'Please respond to the following:\n{{content}}',
+      prompt?.userPrompt || 'Please respond to the following:\n{{content}}',
     model: prompt?.model || 'gpt-5-mini',
     isPublic: prompt?.isPublic || false,
   });
@@ -338,9 +341,9 @@ const AIPromptEditor = ({
 
       <div className="variables-help">
         <strong>Available variables:</strong>
-        <code>{{'{'{'}{'}'}</code> - Selected text or document content
-        <code>{{'{'}{'}'}}</code> - For translation actions
-        <code>{{'{'}{tone}'}}</code> - For tone changes
+        <code>{'{{content}}'}</code> - Selected text or document content
+        <code>{'{{action}}'}</code> - For translation actions
+        <code>{'{{tone}}'}</code> - For tone changes
       </div>
 
       <div className="form-actions">
@@ -356,5 +359,5 @@ const AIPromptEditor = ({
 };
 
 export const AIPromptsSettingsStyles = () => (
-  <GlobalStyle styles={aiPromptsStyles} />
+  <Global styles={aiPromptsStyles} />
 );

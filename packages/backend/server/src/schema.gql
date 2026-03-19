@@ -490,6 +490,9 @@ type CopilotContext {
   """match file in context"""
   matchFiles(content: String!, limit: SafeInt, scopedThreshold: Float, threshold: Float): [ContextMatchedFileChunk!]!
 
+  """Match workspace content with reference awareness"""
+  matchWithReferences(content: String!, includeReferences: Boolean, limit: SafeInt, maxDepth: SafeInt, threshold: Float): [ContextMatchedDocChunk!]!
+
   """match workspace docs"""
   matchWorkspaceDocs(content: String!, limit: SafeInt, scopedThreshold: Float, threshold: Float): [ContextMatchedDocChunk!]!
 
@@ -713,6 +716,16 @@ input CreateUserInput {
   password: String
 }
 
+input CreateUserPromptInputType {
+  isPublic: Boolean
+  model: String
+  name: String!
+  systemPrompt: String
+  userPrompt: String!
+  variables: JSON
+  workspaceId: String
+}
+
 type CredentialsRequirementType {
   password: PasswordLimitsType!
 }
@@ -817,6 +830,12 @@ type DocPermissions {
   Doc_Update: Boolean!
   Doc_Users_Manage: Boolean!
   Doc_Users_Read: Boolean!
+}
+
+type DocReference {
+  content: String!
+  docId: ID!
+  title: String!
 }
 
 """User permission in doc"""
@@ -1025,6 +1044,15 @@ enum ErrorNames {
   WORKSPACE_PERMISSION_NOT_FOUND
   WRONG_SIGN_IN_CREDENTIALS
   WRONG_SIGN_IN_METHOD
+}
+
+input ExecuteUserPromptInputType {
+  variables: JSON
+}
+
+type ExecutedUserPrompt {
+  messages: [PromptMessage!]!
+  model: String!
 }
 
 type ExpectToGrantDocUserRolesDataType {
@@ -1523,6 +1551,9 @@ type Mutation {
   """Create a new user"""
   createUser(input: CreateUserInput!): UserType!
 
+  """Create a new user prompt"""
+  createUserPrompt(input: CreateUserPromptInputType!): UserPrompt!
+
   """Create a new workspace"""
   createWorkspace(init: Upload): WorkspaceType!
   deactivateLicense(workspaceId: String!): Boolean!
@@ -1537,10 +1568,16 @@ type Mutation {
 
   """Delete a user account"""
   deleteUser(id: String!): DeleteAccount!
+
+  """Delete a user prompt"""
+  deleteUserPrompt(id: String!): UserPrompt!
   deleteWorkspace(id: String!): Boolean!
 
   """Reenable an banned user"""
   enableUser(id: String!): UserType!
+
+  """Execute a user prompt with variables"""
+  executeUserPrompt(id: String!, input: ExecuteUserPromptInputType): ExecutedUserPrompt!
 
   """Create a chat session"""
   forkCopilotSession(options: ForkChatSessionInput!): String!
@@ -1647,6 +1684,9 @@ type Mutation {
 
   """update user enabled feature"""
   updateUserFeatures(features: [FeatureType!]!, id: String!): [FeatureType!]!
+
+  """Update a user prompt"""
+  updateUserPrompt(id: String!, input: UpdateUserPromptInputType!): UserPrompt!
 
   """Update workspace"""
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
@@ -1837,6 +1877,11 @@ enum Permission {
   Owner
 }
 
+type PromptMessage {
+  content: String!
+  role: String!
+}
+
 """The mode which the public doc default in"""
 enum PublicDocMode {
   Edgeless
@@ -1885,6 +1930,9 @@ type Query {
   """query workspace embedding status"""
   queryWorkspaceEmbeddingStatus(workspaceId: String!): ContextWorkspaceEmbeddingStatus!
   revealedAccessTokens: [RevealedAccessToken!]! @deprecated(reason: "use currentUser.revealedAccessTokens")
+
+  """Search user prompts"""
+  searchUserPrompts(query: String!, workspaceId: String): [UserPrompt!]!
 
   """server config"""
   serverConfig: ServerConfigType!
@@ -2379,6 +2427,15 @@ input UpdateUserInput {
   name: String
 }
 
+input UpdateUserPromptInputType {
+  isPublic: Boolean
+  model: String
+  name: String
+  systemPrompt: String
+  userPrompt: String
+  variables: JSON
+}
+
 input UpdateUserSettingsInput {
   """Receive comment email"""
   receiveCommentEmail: Boolean
@@ -2424,6 +2481,26 @@ type UserImportFailedType {
 union UserImportResultType = UserImportFailedType | UserType
 
 union UserOrLimitedUser = LimitedUserType | UserType
+
+type UserPrompt {
+  action: String!
+  createdAt: DateTime!
+  id: ID!
+  isPublic: Boolean!
+  model: String!
+  name: String!
+  systemPrompt: String!
+  updatedAt: DateTime!
+  usageCount: Int!
+  userPrompt: String!
+  variables: [UserPromptVariable!]
+}
+
+type UserPromptVariable {
+  default: String!
+  description: String!
+  type: String!
+}
 
 type UserQuotaHumanReadableType {
   blobLimit: String!
@@ -2508,6 +2585,12 @@ type UserType {
   settings: UserSettingsType!
   subscriptions: [SubscriptionType!]!
   token: tokenType! @deprecated(reason: "use [/api/auth/sign-in?native=true] instead")
+
+  """Get a specific user prompt by ID"""
+  userPrompt(id: String!): UserPrompt
+
+  """Get user prompts and public prompts"""
+  userPrompts(includePublic: Boolean, workspaceId: String): [UserPrompt!]!
 }
 
 type ValidationErrorDataType {

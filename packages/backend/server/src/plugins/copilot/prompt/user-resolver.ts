@@ -10,12 +10,13 @@ import {
   Query,
   registerEnumType,
   Resolver,
-} from '@nestjs/common';
+  ResolveField,
+} from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-scalars';
 
 import { Throttle } from '../../../base';
-import { CurrentUser } from '../../core/auth';
-import { UserType } from '../../core/user';
+import { CurrentUser } from '../../../core/auth';
+import { UserType } from '../../../core/user';
 import type {
   CreateUserPromptInput,
   ExecuteUserPromptInput,
@@ -26,7 +27,10 @@ import { UserPromptService } from './user-prompts';
 // ================== Input Types ==================
 
 @InputType()
-class CreateUserPromptInputType implements Omit<CreateUserPromptInput, 'workspaceId'> {
+class CreateUserPromptInputType implements Omit<
+  CreateUserPromptInput,
+  'workspaceId'
+> {
   @Field(() => String)
   name!: string;
 
@@ -40,7 +44,10 @@ class CreateUserPromptInputType implements Omit<CreateUserPromptInput, 'workspac
   model?: string;
 
   @Field(() => GraphQLJSON, { nullable: true })
-  variables?: Record<string, { type: string; default: string; description: string }>;
+  variables?: Record<
+    string,
+    { type: string; default: string; description: string }
+  >;
 
   @Field(() => Boolean, { nullable: true })
   isPublic?: boolean;
@@ -50,9 +57,10 @@ class CreateUserPromptInputType implements Omit<CreateUserPromptInput, 'workspac
 }
 
 @InputType()
-class UpdateUserPromptInputType
-  implements Omit<UpdateUserPromptInput, 'workspaceId'>
-{
+class UpdateUserPromptInputType implements Omit<
+  UpdateUserPromptInput,
+  'workspaceId'
+> {
   @Field(() => String, { nullable: true })
   name?: string;
 
@@ -176,10 +184,7 @@ export class UserPromptResolver {
     description: 'Get a specific user prompt by ID',
     nullable: true,
   })
-  async userPrompt(
-    @Parent() user: UserType,
-    @Args('id') id: string
-  ) {
+  async userPrompt(@Parent() user: UserType, @Args('id') id: string) {
     const prompt = await this.userPromptService.get(id, user.id);
     return prompt ? this.toType(prompt) : null;
   }

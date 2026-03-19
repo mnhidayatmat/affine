@@ -30,7 +30,6 @@ import {
 } from './resolver';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
-import { UserPromptService } from './prompt';
 import {
   CopilotTranscriptionResolver,
   CopilotTranscriptionService,

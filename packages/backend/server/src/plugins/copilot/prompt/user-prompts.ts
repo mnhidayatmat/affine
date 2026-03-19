@@ -1,7 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { Prisma, PrismaClient, UserPrompt } from '@prisma/client';
 
-import { BadRequestException } from '../../../base';
 import type { PromptMessage } from '../providers/types';
 
 export interface CreateUserPromptInput {
@@ -9,7 +8,10 @@ export interface CreateUserPromptInput {
   systemPrompt?: string;
   userPrompt: string;
   model?: string;
-  variables?: Record<string, { type: string; default: string; description: string }>;
+  variables?: Record<
+    string,
+    { type: string; default: string; description: string }
+  >;
   isPublic?: boolean;
   workspaceId?: string;
 }
@@ -19,7 +21,10 @@ export interface UpdateUserPromptInput {
   systemPrompt?: string;
   userPrompt?: string;
   model?: string;
-  variables?: Record<string, { type: string; default: string; description: string }>;
+  variables?: Record<
+    string,
+    { type: string; default: string; description: string }
+  >;
   isPublic?: boolean;
 }
 
@@ -40,7 +45,10 @@ export class UserPromptService {
   /**
    * Create a new user prompt
    */
-  async create(userId: string, input: CreateUserPromptInput): Promise<UserPrompt> {
+  async create(
+    userId: string,
+    input: CreateUserPromptInput
+  ): Promise<UserPrompt> {
     // Check if prompt with same name exists for this user
     const existing = await this.db.userPrompt.findFirst({
       where: {
@@ -82,10 +90,7 @@ export class UserPromptService {
   ): Promise<UserPrompt[]> {
     const where: Prisma.UserPromptWhereInput = {
       deletedAt: null,
-      OR: [
-        { userId },
-        ...(includePublic ? [{ isPublic: true }] : []),
-      ],
+      OR: [{ userId }, ...(includePublic ? [{ isPublic: true }] : [])],
     };
 
     if (workspaceId) {
@@ -202,7 +207,7 @@ export class UserPromptService {
     const userPrompt = this.interpolateVariables(
       prompt.userPrompt,
       input.variables || {},
-      prompt.variables as Record<string, any> || {}
+      (prompt.variables as Record<string, any>) || {}
     );
 
     // Build messages array
@@ -255,10 +260,7 @@ export class UserPromptService {
   ): Promise<UserPrompt[]> {
     const where: Prisma.UserPromptWhereInput = {
       deletedAt: null,
-      OR: [
-        { userId },
-        { isPublic: true },
-      ],
+      OR: [{ userId }, { isPublic: true }],
       AND: {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
